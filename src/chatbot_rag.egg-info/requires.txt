@@ -1,0 +1,9 @@
+ollama==0.5.1
+langchain==0.3.25
+langchain-community==0.3.24
+pdfplumber==0.11.6
+sentence_transformers==4.1.0
+pymupdf==1.26.0
+pytesseract==0.3.13
+faiss-cpu==1.11.0
+pandas==2.2.3
