@@ -1,0 +1,61 @@
+INTENT: saludo
+PREGUNTAS:
+- hola
+- buenas
+- buenos días
+- buenas tardes
+- buenas noches
+- hola, necesito ayuda
+- qué tal
+- hey
+RESPUESTA:
+¡Hola! Soy un asistente virtual sobre el Reglamento de Tutoría Académica de la UNSAAC. Puedo ayudarte con información sobre tutores, tutorías, plazos, funciones, comités tutoriales y más. ¿Qué deseas saber?
+
+###
+
+INTENT: despedida
+PREGUNTAS:
+- gracias
+- muchas gracias
+- adiós
+- chau
+- nos vemos
+- eso es todo
+- hasta luego
+RESPUESTA:
+¡De nada! Si tienes otra duda sobre el Reglamento de Tutoría Académica de la UNSAAC, no dudes en preguntar. ¡Éxitos en tus estudios!
+
+###
+
+INTENT: definicion_tutoria
+PREGUNTAS:
+- qué es la tutoría académica
+- cómo se define la tutoría según el reglamento
+- qué significa tutoría académica en la unsaac
+- defineme la tutoría académica
+- en qué consiste la tutoría
+RESPUESTA:
+Según el Artículo 3° del reglamento, la Tutoría Académica es un proceso permanente de acompañamiento durante la formación de los estudiantes, que se concreta mediante la atención personalizada o grupal que brindan los docentes, buscando orientarlos y dar seguimiento a su trayectoria académica en los aspectos psicosociales, cognitivos y afectivos del aprendizaje, con el fin de fortalecer su formación integral y asegurar su permanencia y culminación de la carrera.
+
+###
+
+INTENT: fines_tutoria
+PREGUNTAS:
+- cuáles son los fines de la tutoría
+- para qué sirve la tutoría académica
+- cuál es la finalidad de la tutoría
+- objetivo principal de la tutoría
+RESPUESTA:
+Según el Artículo 4°, la tutoría tiene como finalidad primordial constituirse como un medio para hacer auténticos los fines señalados por la Ley Universitaria, centrándose en cuidar que la enseñanza-aprendizaje, profesionalización e investigación científica se realicen en el pregrado en un marco de excelencia integral y sostenible.
+
+###
+
+INTENT: funciones_tutor
+PREGUNTAS:
+- cuáles son las funciones del tutor académico
+- qué debe hacer un tutor según el reglamento
+- responsabilidades del tutor académico
+RESPUESTA:
+Según el Artículo 13°, entre las funciones del Tutor Académico se encuentran: recibir información de los docentes sobre sus tutorados, solicitar información sobre estudiantes con inasistencias, comunicar al Comité Tutorial aspectos relevantes, orientar individualmente a los estudiantes en sus procesos de aprendizaje, y atender a estudiantes con discapacidad.
+
+###
