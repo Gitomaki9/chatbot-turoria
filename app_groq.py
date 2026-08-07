@@ -61,12 +61,24 @@ def cargar_corpus():
         return {}
 
 # --- Configurar Groq ---
+# --- Configurar Groq ---
 @st.cache_resource
 def init_groq():
+    # Intentar leer de diferentes formas
     api_key = os.getenv("GROQ_API_KEY")
+    
+    # Si no está en el entorno, intentar leer desde st.secrets
+    if not api_key:
+        try:
+            api_key = st.secrets["GROQ_API_KEY"]
+        except:
+            pass
+    
+    # Si aún no está, mostrar error
     if not api_key:
         st.error("❌ GROQ_API_KEY no encontrada. Revisa los secretos de Streamlit.")
-        return None
+        st.stop()
+    
     return Groq(api_key=api_key)
 
 # --- Función para responder ---
