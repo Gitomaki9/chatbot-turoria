@@ -9,6 +9,11 @@ import chromadb
 from chromadb.utils import embedding_functions
 import tempfile
 
+from cargar_tutores import cargar_tutores, buscar_tutor_por_codigo, buscar_tutorados_por_docente, responder_pregunta_tutores
+
+# Cargar datos de tutores
+tutores_data = cargar_tutores()
+
 # Configuración
 st.set_page_config(
     page_title="Chatbot Tutoría UNSAAC",
@@ -166,6 +171,10 @@ def responder(pregunta, corpus, groq_client, vectorstore):
         for p in data["preguntas"]:
             if p.lower() in pregunta_min or pregunta_min in p.lower():
                 return data["respuesta"], "Corpus manual ⚡"
+    # 1.5 Buscar en datos de tutores (antes de RAG)
+    respuesta_tutores, fuente_tutores = responder_pregunta_tutores(tutores_data, pregunta)
+    if respuesta_tutores:
+        return respuesta_tutores, fuente_tutores
     
     # 2. Búsqueda semántica en PDFs
     if vectorstore:
