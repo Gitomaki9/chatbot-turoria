@@ -14,19 +14,31 @@ def cargar_tutores():
     
     try:
         with open("tutores.csv", 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                # Leer las 5 columnas
-                apellido_docente = row['apellido_docente'].strip()
-                nombre_docente = row['nombre_docente'].strip()
-                codigo = row['codigo_tutorado'].strip()
-                apellido_tutorado = row['apellido_tutorado'].strip()
-                nombre_tutorado = row['nombre_tutorado'].strip()
+            # Leer todas las líneas y filtrar vacías
+            lines = [line.strip() for line in f if line.strip()]
+            
+        if not lines:
+            st.error("❌ El archivo tutores.csv está vacío.")
+            return {}
+        
+        # Usar csv.DictReader con las líneas limpias
+        import io
+        reader = csv.DictReader(io.StringIO('\n'.join(lines)))
+        
+        for row in reader:
+            try:
+                # Obtener valores con .strip() y manejar None
+                apellido_docente = (row.get('apellido_docente') or '').strip()
+                nombre_docente = (row.get('nombre_docente') or '').strip()
+                codigo = (row.get('codigo_tutorado') or '').strip()
+                apellido_tutorado = (row.get('apellido_tutorado') or '').strip()
+                nombre_tutorado = (row.get('nombre_tutorado') or '').strip()
                 
-                # Crear nombre completo del docente
+                # Verificar que todos los campos tengan datos
+                if not all([apellido_docente, nombre_docente, codigo, apellido_tutorado, nombre_tutorado]):
+                    continue
+                
                 docente = f"{apellido_docente}, {nombre_docente}"
-                
-                # Crear nombre completo del tutorado
                 nombre_completo = f"{apellido_tutorado}, {nombre_tutorado}"
                 
                 if docente not in tutores:
@@ -35,8 +47,10 @@ def cargar_tutores():
                     'codigo': codigo,
                     'nombre': nombre_completo
                 })
+            except Exception as e:
+                # Saltar filas con errores
+                continue
         
-        # Ordenar alfabéticamente los docentes
         tutores = dict(sorted(tutores.items()))
         return tutores
     except FileNotFoundError:
@@ -47,10 +61,7 @@ def cargar_tutores():
         return {}
 
 def buscar_tutor_por_codigo(tutores, codigo):
-    """
-    Busca el tutor de un estudiante por su código.
-    Retorna: (docente, nombre_tutorado) o (None, None)
-    """
+    """Busca el tutor de un estudiante por su código."""
     codigo = str(codigo).strip()
     for docente, tutorados in tutores.items():
         for t in tutorados:
@@ -59,10 +70,7 @@ def buscar_tutor_por_codigo(tutores, codigo):
     return None, None
 
 def buscar_tutor_por_nombre(tutores, nombre):
-    """
-    Busca el tutor de un estudiante por su nombre (búsqueda parcial).
-    Retorna: lista de (docente, nombre_tutorado, codigo)
-    """
+    """Busca el tutor de un estudiante por su nombre (búsqueda parcial)."""
     nombre = nombre.lower().strip()
     resultados = []
     for docente, tutorados in tutores.items():
@@ -72,10 +80,7 @@ def buscar_tutor_por_nombre(tutores, nombre):
     return resultados
 
 def buscar_tutorados_por_docente(tutores, docente):
-    """
-    Devuelve la lista de tutorados de un docente (búsqueda parcial).
-    Retorna: lista de tutorados
-    """
+    """Devuelve la lista de tutorados de un docente."""
     docente = docente.lower().strip()
     resultados = []
     for d, tutorados in tutores.items():
@@ -88,10 +93,7 @@ def buscar_tutorados_por_docente(tutores, docente):
     return resultados
 
 def buscar_docente_por_nombre(tutores, nombre):
-    """
-    Busca un docente por su nombre (búsqueda parcial).
-    Retorna: el nombre completo del docente o None
-    """
+    """Busca un docente por su nombre (búsqueda parcial)."""
     nombre = nombre.lower().strip()
     for docente in tutores.keys():
         if nombre in docente.lower():
@@ -99,16 +101,11 @@ def buscar_docente_por_nombre(tutores, nombre):
     return None
 
 def listar_todos_tutores(tutores):
-    """
-    Devuelve la lista de todos los docentes.
-    """
+    """Devuelve la lista de todos los docentes."""
     return list(tutores.keys())
 
 def contar_tutorados(tutores, docente=None):
-    """
-    Cuenta el número total de tutorados.
-    Si se especifica un docente, cuenta solo los de ese docente.
-    """
+    """Cuenta el número total de tutorados."""
     if docente:
         tutorados = buscar_tutorados_por_docente(tutores, docente)
         return len(tutorados)
@@ -119,10 +116,7 @@ def contar_tutorados(tutores, docente=None):
         return total
 
 def responder_pregunta_tutores(tutores, pregunta):
-    """
-    Función principal para procesar preguntas sobre tutores.
-    Retorna: (respuesta, fuente)
-    """
+    """Función principal para procesar preguntas sobre tutores."""
     pregunta_lower = pregunta.lower().strip()
     import re
     
@@ -167,7 +161,7 @@ def responder_pregunta_tutores(tutores, pregunta):
     
     return None, None
 
-# --- Prueba rápida (solo se ejecuta si se corre el script directamente) ---
+# --- Prueba rápida ---
 if __name__ == "__main__":
     print("="*50)
     print("📋 Cargando datos de tutores...")
@@ -186,26 +180,11 @@ if __name__ == "__main__":
         print("🔍 Prueba de búsqueda:")
         print("="*50)
         
-        # Prueba 1: Buscar por código
-        print("\n1. Buscando código 164246:")
+        print("\n🔍 Buscando código 164246:")
         tutor, nombre = buscar_tutor_por_codigo(tutores, "164246")
         if tutor:
             print(f"   ✅ {nombre} → Tutor: {tutor}")
-        
-        # Prueba 2: Buscar por nombre de estudiante
-        print("\n2. Buscando 'Pacha Quispe':")
-        resultados = buscar_tutor_por_nombre(tutores, "Pacha Quispe")
-        if resultados:
-            for tutor, nombre, codigo in resultados:
-                print(f"   ✅ {nombre} (código {codigo}) → Tutor: {tutor}")
-        
-        # Prueba 3: Buscar tutorados de un docente
-        print("\n3. Buscando tutorados de 'Pillco Quispe':")
-        tutorados = buscar_tutorados_por_docente(tutores, "Pillco Quispe")
-        if tutorados:
-            for t in tutorados[:5]:
-                print(f"   ✅ {t['nombre']} (código {t['codigo']})")
-            if len(tutorados) > 5:
-                print(f"   ... y {len(tutorados)-5} más")
+        else:
+            print("   ❌ No encontrado")
     else:
         print("❌ No se pudieron cargar los datos.")
