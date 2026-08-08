@@ -8,6 +8,10 @@ import chromadb
 from chromadb.utils import embedding_functions
 import tempfile
 
+# Forzar recarga de tutores (temporal)
+import cargar_tutores
+cargar_tutores.cargar_tutores.clear()
+tutores_data = cargar_tutores.cargar_tutores()
 # Importar funciones para cargar tutores
 from cargar_tutores import cargar_tutores, buscar_tutor_por_codigo, buscar_tutorados_por_docente, responder_pregunta_tutores, listar_todos_tutores
 
