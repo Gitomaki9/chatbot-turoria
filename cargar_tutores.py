@@ -7,8 +7,8 @@ import re
 def cargar_tutores():
     """
     Carga la lista de tutores y tutorados desde el archivo CSV.
-    Formato (5 columnas):
-    apellido_docente, nombre_docente, codigo_tutorado, apellido_tutorado, nombre_tutorado
+    Formato (4 columnas):
+    apellido_docente, nombre_docente, codigo_tutorado, nombre_tutorado
     """
     tutores = {}
     
@@ -27,25 +27,23 @@ def cargar_tutores():
         
         for row in reader:
             try:
-                # Obtener valores con .strip() y manejar None
+                # 4 columnas: apellido_docente, nombre_docente, codigo_tutorado, nombre_tutorado
                 apellido_docente = (row.get('apellido_docente') or '').strip()
                 nombre_docente = (row.get('nombre_docente') or '').strip()
                 codigo = (row.get('codigo_tutorado') or '').strip()
-                apellido_tutorado = (row.get('apellido_tutorado') or '').strip()
                 nombre_tutorado = (row.get('nombre_tutorado') or '').strip()
                 
                 # Verificar que todos los campos tengan datos
-                if not all([apellido_docente, nombre_docente, codigo, apellido_tutorado, nombre_tutorado]):
+                if not all([apellido_docente, nombre_docente, codigo, nombre_tutorado]):
                     continue
                 
                 docente = f"{apellido_docente}, {nombre_docente}"
-                nombre_completo = f"{apellido_tutorado}, {nombre_tutorado}"
                 
                 if docente not in tutores:
                     tutores[docente] = []
                 tutores[docente].append({
                     'codigo': codigo,
-                    'nombre': nombre_completo
+                    'nombre': nombre_tutorado
                 })
             except Exception as e:
                 # Saltar filas con errores
