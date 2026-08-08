@@ -3,6 +3,20 @@ import csv
 import streamlit as st
 import pandas as pd
 
+# En cargar_tutores.py, agrega esta función
+def buscar_tutor_por_codigo_debug(tutores, codigo):
+    """Versión con debug para ver qué está pasando"""
+    codigo = str(codigo).strip()
+    st.write(f"🔍 Buscando código: {codigo}")
+    st.write(f"📚 Docentes disponibles: {list(tutores.keys())}")
+    
+    for docente, tutorados in tutores.items():
+        st.write(f"👨‍🏫 Revisando docente: {docente}")
+        for t in tutorados:
+            st.write(f"   - Código: {t['codigo']} → {t['nombre']}")
+            if t['codigo'] == codigo:
+                return docente, t['nombre']
+    return None, None
 @st.cache_data
 def cargar_tutores():
     """
