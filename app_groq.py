@@ -1,14 +1,15 @@
-# app_groq.py - Versión para Streamlit Cloud
+# app_groq.py - Con búsqueda semántica (ChromaDB + Sentence Transformers)
 import streamlit as st
 import os
 import re
-from dotenv import load_dotenv
 from groq import Groq
+from PyPDF2 import PdfReader
+from sentence_transformers import SentenceTransformer
+import chromadb
+from chromadb.utils import embedding_functions
+import tempfile
 
-# Cargar variables de entorno
-load_dotenv()
-
-# Configuración de la página
+# Configuración
 st.set_page_config(
     page_title="Chatbot Tutoría UNSAAC",
     page_icon="🎓",
@@ -16,9 +17,9 @@ st.set_page_config(
 )
 
 st.title("🎓 Chatbot de Tutoría Académica - UNSAAC")
-st.markdown("*Asistente virtual para consultas sobre el Reglamento de Tutoría Académica*")
+st.markdown("*Asistente virtual con búsqueda semántica en el Reglamento de Tutoría Académica*")
 
-# --- Cargar corpus manual ---
+# --- 1. Cargar corpus manual ---
 @st.cache_data
 def cargar_corpus():
     corpus = {}
@@ -60,29 +61,104 @@ def cargar_corpus():
         st.error(f"Error al cargar corpus: {e}")
         return {}
 
-# --- Configurar Groq ---
-# --- Configurar Groq ---
+# --- 2. Configurar Groq ---
 @st.cache_resource
 def init_groq():
-    # Intentar leer de diferentes formas
     api_key = os.getenv("GROQ_API_KEY")
-    
-    # Si no está en el entorno, intentar leer desde st.secrets
     if not api_key:
         try:
             api_key = st.secrets["GROQ_API_KEY"]
         except:
-            pass
-    
-    # Si aún no está, mostrar error
-    if not api_key:
-        st.error("❌ GROQ_API_KEY no encontrada. Revisa los secretos de Streamlit.")
-        st.stop()
-    
+            st.error("❌ GROQ_API_KEY no encontrada.")
+            st.stop()
     return Groq(api_key=api_key)
 
-# --- Función para responder ---
-def responder(pregunta, corpus, groq_client):
+# --- 3. Configurar búsqueda semántica con ChromaDB ---
+@st.cache_resource
+def init_vectorstore():
+    """Crea una base de datos vectorial con los PDFs"""
+    
+    # Leer todos los PDFs
+    docs = []
+    data_dir = "./data/"
+    
+    if not os.path.exists(data_dir):
+        st.warning("⚠️ Carpeta 'data/' no encontrada")
+        return None
+    
+    for file in os.listdir(data_dir):
+        if file.endswith(".pdf"):
+            try:
+                reader = PdfReader(os.path.join(data_dir, file))
+                texto = ""
+                for page in reader.pages:
+                    texto += page.extract_text() + "\n"
+                docs.append({"texto": texto, "nombre": file})
+                st.info(f"📄 Procesando: {file}")
+            except Exception as e:
+                st.warning(f"Error al leer {file}: {e}")
+    
+    if not docs:
+        return None
+    
+    # Dividir en fragmentos (chunks)
+    chunks = []
+    for doc in docs:
+        texto = doc["texto"]
+        # Dividir por párrafos
+        for i, parrafo in enumerate(texto.split("\n\n")):
+            if len(parrafo.strip()) > 50:
+                chunks.append({
+                    "texto": parrafo.strip(),
+                    "fuente": doc["nombre"],
+                    "chunk_id": i
+                })
+    
+    st.info(f"📊 {len(chunks)} fragmentos creados")
+    
+    # Crear embeddings
+    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+        model_name="paraphrase-multilingual-MiniLM-L12-v2"
+    )
+    
+    # Crear base de datos ChromaDB en memoria
+    client = chromadb.Client()
+    collection = client.create_collection(
+        name="reglamento",
+        embedding_function=embedding_fn
+    )
+    
+    # Agregar fragmentos a la base de datos
+    for i, chunk in enumerate(chunks):
+        collection.add(
+            documents=[chunk["texto"]],
+            metadatas=[{"fuente": chunk["fuente"], "chunk_id": str(chunk["chunk_id"])}],
+            ids=[f"chunk_{i}"]
+        )
+    
+    st.success(f"✅ Base de datos vectorial lista ({len(chunks)} fragmentos)")
+    
+    return collection, chunks
+
+# --- 4. Función para buscar semánticamente ---
+def buscar_semanticamente(collection, pregunta, n_resultados=5):
+    """Busca los fragmentos más relevantes usando embeddings"""
+    try:
+        results = collection.query(
+            query_texts=[pregunta],
+            n_results=n_resultados
+        )
+        
+        if results['documents']:
+            return results['documents'][0]
+        else:
+            return []
+    except Exception as e:
+        st.warning(f"Error en búsqueda: {e}")
+        return []
+
+# --- 5. Responder ---
+def responder(pregunta, corpus, groq_client, vectorstore):
     pregunta_min = pregunta.lower().strip()
     
     # 1. Buscar en corpus manual
@@ -91,54 +167,46 @@ def responder(pregunta, corpus, groq_client):
             if p.lower() in pregunta_min or pregunta_min in p.lower():
                 return data["respuesta"], "Corpus manual ⚡"
     
-    # 2. Usar Groq API
-    if groq_client:
+    # 2. Búsqueda semántica en PDFs
+    if vectorstore:
         try:
-            # Leer el reglamento PDF
-            texto_pdf = ""
-            data_dir = "./data/"
-            if os.path.exists(data_dir):
-                from PyPDF2 import PdfReader
-                for file in os.listdir(data_dir):
-                    if file.endswith(".pdf"):
-                        try:
-                            reader = PdfReader(os.path.join(data_dir, file))
-                            for page in reader.pages:
-                                texto_pdf += page.extract_text() + "\n"
-                        except Exception:
-                            pass
+            collection, chunks = vectorstore
+            fragmentos = buscar_semanticamente(collection, pregunta, n_resultados=5)
             
-            # Construir prompt con contexto
-            prompt = f"""
-            Eres un asistente virtual de la UNSAAC. Responde la pregunta del usuario usando el contexto proporcionado.
-            
-            Contexto (del reglamento):
-            {texto_pdf[:8000]}  # Limitar a 8000 caracteres
-            
-            Pregunta del usuario: {pregunta}
-            
-            Respuesta (basada SOLO en el contexto):
-            """
-            
-            response = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=500
-            )
-            
-            return response.choices[0].message.content, "Groq API 🚀"
+            if fragmentos:
+                contexto = "\n\n".join(fragmentos)
+                
+                prompt = f"""
+                Eres un asistente virtual de la UNSAAC. 
+                Responde la pregunta del usuario usando SOLO el contexto proporcionado.
+                
+                Contexto (del Reglamento de Tutoría Académica):
+                {contexto[:8000]}
+                
+                Pregunta del usuario: {pregunta}
+                
+                Respuesta (basada SOLO en el contexto):
+                """
+                
+                response = groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    max_tokens=500
+                )
+                
+                return response.choices[0].message.content, "Búsqueda semántica 🔍"
+            else:
+                return "No encontré información relevante en el reglamento.", "Sin información"
         except Exception as e:
-            return f"Error con Groq: {e}", "Error"
+            return f"Error en búsqueda semántica: {e}", "Error"
     
     return "No encontré información sobre eso.", "Sin información"
 
 # --- Main ---
 corpus = cargar_corpus()
 groq_client = init_groq()
-
-if not groq_client:
-    st.stop()
+vectorstore = init_vectorstore()
 
 # Historial de chat
 if "messages" not in st.session_state:
@@ -155,7 +223,7 @@ if prompt := st.chat_input("Escribe tu pregunta aquí..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    respuesta, fuente = responder(prompt, corpus, groq_client)
+    respuesta, fuente = responder(prompt, corpus, groq_client, vectorstore)
     
     st.session_state.messages.append({"role": "assistant", "content": respuesta})
     with st.chat_message("assistant"):
