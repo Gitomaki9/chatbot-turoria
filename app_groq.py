@@ -4,7 +4,6 @@ import os
 import re
 from groq import Groq
 from PyPDF2 import PdfReader
-from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.utils import embedding_functions
 import tempfile
@@ -61,7 +60,6 @@ def cargar_corpus():
             
             if preguntas and respuesta:
                 corpus[intent] = {"preguntas": preguntas, "respuesta": respuesta}
-                # st.info(f"✅ Intent cargado: {intent}")
         
         return corpus
     except Exception as e:
@@ -116,7 +114,6 @@ def init_vectorstore():
     chunks = []
     for doc in docs:
         texto = doc["texto"]
-        # Dividir por párrafos
         for i, parrafo in enumerate(texto.split("\n\n")):
             if len(parrafo.strip()) > 50:
                 chunks.append({
@@ -143,18 +140,29 @@ def init_vectorstore():
     # Crear base de datos ChromaDB en memoria
     try:
         client = chromadb.Client()
+        
+        # Eliminar la colección si ya existe
+        try:
+            client.delete_collection("reglamento")
+            st.info("🔄 Colección anterior eliminada")
+        except:
+            pass  # No existía, continuar
+        
         collection = client.create_collection(
             name="reglamento",
             embedding_function=embedding_fn
         )
         
-        # Agregar fragmentos a la base de datos
-        for i, chunk in enumerate(chunks):
-            collection.add(
-                documents=[chunk["texto"]],
-                metadatas=[{"fuente": chunk["fuente"], "chunk_id": str(chunk["chunk_id"])}],
-                ids=[f"chunk_{i}"]
-            )
+        # Agregar fragmentos a la base de datos en lotes
+        batch_size = 50
+        for i in range(0, len(chunks), batch_size):
+            batch = chunks[i:i+batch_size]
+            for j, chunk in enumerate(batch):
+                collection.add(
+                    documents=[chunk["texto"]],
+                    metadatas=[{"fuente": chunk["fuente"], "chunk_id": str(chunk["chunk_id"])}],
+                    ids=[f"chunk_{i+j}"]
+                )
         
         st.success(f"✅ Base de datos vectorial lista ({len(chunks)} fragmentos)")
         return collection, chunks
