@@ -1,4 +1,4 @@
-# app_groq.py - Con búsqueda semántica (ChromaDB + Sentence Transformers)
+# app_groq.py - Chatbot con búsqueda semántica (ChromaDB + Sentence Transformers) + Datos de tutores
 import streamlit as st
 import os
 import re
@@ -9,12 +9,13 @@ import chromadb
 from chromadb.utils import embedding_functions
 import tempfile
 
-from cargar_tutores import cargar_tutores, buscar_tutor_por_codigo, buscar_tutorados_por_docente, responder_pregunta_tutores
+# Importar funciones para cargar tutores
+from cargar_tutores import cargar_tutores, buscar_tutor_por_codigo, buscar_tutorados_por_docente, responder_pregunta_tutores, listar_todos_tutores
 
 # Cargar datos de tutores
 tutores_data = cargar_tutores()
 
-# Configuración
+# Configuración de la página
 st.set_page_config(
     page_title="Chatbot Tutoría UNSAAC",
     page_icon="🎓",
@@ -22,7 +23,7 @@ st.set_page_config(
 )
 
 st.title("🎓 Chatbot de Tutoría Académica - UNSAAC")
-st.markdown("*Asistente virtual con búsqueda semántica en el Reglamento de Tutoría Académica*")
+st.markdown("*Asistente virtual para consultas sobre el Reglamento de Tutoría Académica y tutores*")
 
 # --- 1. Cargar corpus manual ---
 @st.cache_data
@@ -60,6 +61,7 @@ def cargar_corpus():
             
             if preguntas and respuesta:
                 corpus[intent] = {"preguntas": preguntas, "respuesta": respuesta}
+                # st.info(f"✅ Intent cargado: {intent}")
         
         return corpus
     except Exception as e:
@@ -74,7 +76,7 @@ def init_groq():
         try:
             api_key = st.secrets["GROQ_API_KEY"]
         except:
-            st.error("❌ GROQ_API_KEY no encontrada.")
+            st.error("❌ GROQ_API_KEY no encontrada. Revisa los secretos de Streamlit.")
             st.stop()
     return Groq(api_key=api_key)
 
@@ -97,13 +99,17 @@ def init_vectorstore():
                 reader = PdfReader(os.path.join(data_dir, file))
                 texto = ""
                 for page in reader.pages:
-                    texto += page.extract_text() + "\n"
-                docs.append({"texto": texto, "nombre": file})
-                st.info(f"📄 Procesando: {file}")
+                    page_text = page.extract_text()
+                    if page_text:
+                        texto += page_text + "\n"
+                if texto.strip():
+                    docs.append({"texto": texto, "nombre": file})
+                    st.info(f"📄 Procesando: {file}")
             except Exception as e:
                 st.warning(f"Error al leer {file}: {e}")
     
     if not docs:
+        st.warning("⚠️ No se encontraron documentos PDF en data/")
         return None
     
     # Dividir en fragmentos (chunks)
@@ -119,31 +125,42 @@ def init_vectorstore():
                     "chunk_id": i
                 })
     
+    if not chunks:
+        st.warning("⚠️ No se pudieron crear fragmentos del PDF")
+        return None
+    
     st.info(f"📊 {len(chunks)} fragmentos creados")
     
     # Crear embeddings
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="paraphrase-multilingual-MiniLM-L12-v2"
-    )
+    try:
+        embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="paraphrase-multilingual-MiniLM-L12-v2"
+        )
+    except Exception as e:
+        st.error(f"❌ Error al cargar modelo de embeddings: {e}")
+        return None
     
     # Crear base de datos ChromaDB en memoria
-    client = chromadb.Client()
-    collection = client.create_collection(
-        name="reglamento",
-        embedding_function=embedding_fn
-    )
-    
-    # Agregar fragmentos a la base de datos
-    for i, chunk in enumerate(chunks):
-        collection.add(
-            documents=[chunk["texto"]],
-            metadatas=[{"fuente": chunk["fuente"], "chunk_id": str(chunk["chunk_id"])}],
-            ids=[f"chunk_{i}"]
+    try:
+        client = chromadb.Client()
+        collection = client.create_collection(
+            name="reglamento",
+            embedding_function=embedding_fn
         )
-    
-    st.success(f"✅ Base de datos vectorial lista ({len(chunks)} fragmentos)")
-    
-    return collection, chunks
+        
+        # Agregar fragmentos a la base de datos
+        for i, chunk in enumerate(chunks):
+            collection.add(
+                documents=[chunk["texto"]],
+                metadatas=[{"fuente": chunk["fuente"], "chunk_id": str(chunk["chunk_id"])}],
+                ids=[f"chunk_{i}"]
+            )
+        
+        st.success(f"✅ Base de datos vectorial lista ({len(chunks)} fragmentos)")
+        return collection, chunks
+    except Exception as e:
+        st.error(f"❌ Error al crear base de datos vectorial: {e}")
+        return None
 
 # --- 4. Función para buscar semánticamente ---
 def buscar_semanticamente(collection, pregunta, n_resultados=5):
@@ -162,21 +179,22 @@ def buscar_semanticamente(collection, pregunta, n_resultados=5):
         st.warning(f"Error en búsqueda: {e}")
         return []
 
-# --- 5. Responder ---
+# --- 5. Responder (con el orden correcto) ---
 def responder(pregunta, corpus, groq_client, vectorstore):
     pregunta_min = pregunta.lower().strip()
     
-    # 1. Buscar en corpus manual
-    for intent, data in corpus.items():
-        for p in data["preguntas"]:
-            if p.lower() in pregunta_min or pregunta_min in p.lower():
-                return data["respuesta"], "Corpus manual ⚡"
-    # 1.5 Buscar en datos de tutores (antes de RAG)
+    # --- 1. PRIMERO: Buscar en datos de tutores (CSV) ---
     respuesta_tutores, fuente_tutores = responder_pregunta_tutores(tutores_data, pregunta)
     if respuesta_tutores:
         return respuesta_tutores, fuente_tutores
     
-    # 2. Búsqueda semántica en PDFs
+    # --- 2. SEGUNDO: Buscar en corpus manual ---
+    for intent, data in corpus.items():
+        for p in data["preguntas"]:
+            if p.lower() in pregunta_min or pregunta_min in p.lower():
+                return data["respuesta"], "Corpus manual ⚡"
+    
+    # --- 3. TERCERO: Búsqueda semántica en PDFs (RAG) ---
     if vectorstore:
         try:
             collection, chunks = vectorstore
@@ -188,6 +206,7 @@ def responder(pregunta, corpus, groq_client, vectorstore):
                 prompt = f"""
                 Eres un asistente virtual de la UNSAAC. 
                 Responde la pregunta del usuario usando SOLO el contexto proporcionado.
+                Si el contexto no contiene información relevante, responde que no encontraste la información.
                 
                 Contexto (del Reglamento de Tutoría Académica):
                 {contexto[:8000]}
@@ -217,23 +236,46 @@ corpus = cargar_corpus()
 groq_client = init_groq()
 vectorstore = init_vectorstore()
 
-# Historial de chat
+# Mostrar estado de los datos cargados en la barra lateral
+with st.sidebar:
+    st.header("📊 Datos cargados")
+    st.write(f"📚 Corpus manual: {len(corpus)} intents")
+    if tutores_data:
+        st.write(f"👨‍🏫 Tutores: {len(tutores_data)} docentes")
+        total_tutorados = sum(len(t) for t in tutores_data.values())
+        st.write(f"📋 Tutorados: {total_tutorados} estudiantes")
+    else:
+        st.write("⚠️ No se cargaron datos de tutores")
+    
+    st.divider()
+    st.caption("🔍 El chatbot busca en:")
+    st.caption("1️⃣ Datos de tutores (CSV)")
+    st.caption("2️⃣ Corpus manual")
+    st.caption("3️⃣ Reglamento (PDF)")
+
+# Inicializar historial de chat
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "¡Hola! Soy el asistente virtual de tutoría académica de la UNSAAC. ¿En qué puedo ayudarte?"}
+        {"role": "assistant", "content": "¡Hola! Soy el asistente virtual de tutoría académica de la UNSAAC. Puedo ayudarte con:\n\n• 📋 Consultas sobre tutores y tutorados\n• 📚 Preguntas sobre el Reglamento de Tutoría\n• 🎓 Información sobre la Escuela Profesional\n\n¿En qué puedo ayudarte?"}
     ]
 
+# Mostrar mensajes del chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Input del usuario
 if prompt := st.chat_input("Escribe tu pregunta aquí..."):
+    # Agregar mensaje del usuario
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
     
-    respuesta, fuente = responder(prompt, corpus, groq_client, vectorstore)
+    # Obtener respuesta
+    with st.spinner("Buscando respuesta..."):
+        respuesta, fuente = responder(prompt, corpus, groq_client, vectorstore)
     
+    # Agregar respuesta del asistente
     st.session_state.messages.append({"role": "assistant", "content": respuesta})
     with st.chat_message("assistant"):
         st.markdown(respuesta)
