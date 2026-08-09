@@ -227,7 +227,12 @@ def responder(pregunta, corpus, groq_client, vectorstore):
     if respuesta_tutores:
         return respuesta_tutores, fuente_tutores
     
-    # --- 2. SEGUNDO: Buscar en corpus manual ---
+    # --- 2. SEGUNDO: Buscar en datos de cursos (CSV) ---
+    respuesta_cursos, fuente_cursos = responder_pregunta_cursos(cursos_data, pregunta)
+    if respuesta_cursos:
+        return respuesta_cursos, fuente_cursos
+    
+    # --- 3. TERCERO: Buscar en corpus manual ---
     # Coincidencia por frase exacta o palabra clave temática
     for intent, data in corpus.items():
         for p in data["preguntas"]:
