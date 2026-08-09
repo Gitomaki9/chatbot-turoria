@@ -224,18 +224,23 @@ def responder(pregunta, corpus, groq_client, vectorstore):
     # Atajos de palabras clave principales del corpus si la frase varía
     mapa_palabras_clave = {
         "comedor": "comedor_universitario",
-        "comensal": "comedor_universitario",
+        "reservar": "comedor_universitario",
         "beca": "becas_unsaac",
         "becas": "becas_unsaac",
         "intercambio": "movilidad_academica",
         "movilidad": "movilidad_academica",
+        "carnet": "carnet_universitario",
         "lycoris": "carnet_universitario",
         "pladdes": "tramites_academicos_pladdes",
         "recaudación": "tramites_academicos_pladdes",
         "recaudacion": "tramites_academicos_pladdes",
+        "computo": "centro_computo",
+        "cómputo": "centro_computo",
         "idiomas": "centro_idiomas",
         "inglés": "centro_idiomas",
-        "ingles": "centro_idiomas"
+        "ingles": "centro_idiomas",
+        "egreso": "creditos_egreso_unsaac",
+        "graduarme": "creditos_egreso_unsaac",
     }
     
     for kw, intent_key in mapa_palabras_clave.items():
