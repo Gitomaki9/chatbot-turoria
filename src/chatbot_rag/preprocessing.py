@@ -14,9 +14,13 @@ from langchain_community.document_loaders.parsers import (
 
 from langchain_core.documents import Document
 import pdfplumber
-#import pytesseract
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
 
 from transformers import AutoTokenizer, AutoModel
+
 import numpy as np
 from sklearn.cluster import KMeans
 from langchain_text_splitters import MarkdownHeaderTextSplitter
