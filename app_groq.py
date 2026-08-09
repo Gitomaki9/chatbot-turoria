@@ -223,26 +223,54 @@ def responder(pregunta, corpus, groq_client, vectorstore):
     
     # Atajos de palabras clave principales del corpus si la frase varía
     mapa_palabras_clave = {
+        # Comedor Universitario
         "comedor": "comedor_universitario",
         "reservar": "comedor_universitario",
+        "reserva": "comedor_universitario",
+        "cupo": "comedor_universitario",
+        "ticket": "comedor_universitario",
+        "comensal": "comedor_universitario",
+        "comida": "comedor_universitario",
+        "almuerzo": "comedor_universitario",
+        "cena": "comedor_universitario",
+        # Becas
         "beca": "becas_unsaac",
         "becas": "becas_unsaac",
+        "apoyo": "becas_unsaac",
+        "subsidio": "becas_unsaac",
+        # Movilidad
         "intercambio": "movilidad_academica",
         "movilidad": "movilidad_academica",
+        "extranjero": "movilidad_academica",
+        # Carnet
         "carnet": "carnet_universitario",
+        "carné": "carnet_universitario",
         "lycoris": "carnet_universitario",
+        # Trámites
         "pladdes": "tramites_academicos_pladdes",
+        "trámite": "tramites_academicos_pladdes",
+        "tramites": "tramites_academicos_pladdes",
         "recaudación": "tramites_academicos_pladdes",
         "recaudacion": "tramites_academicos_pladdes",
+        "expediente": "tramites_academicos_pladdes",
+        # Centro de Cómputo
         "computo": "centro_computo",
         "cómputo": "centro_computo",
+        "pronabec": "centro_computo",
+        # Idiomas
         "idiomas": "centro_idiomas",
         "inglés": "centro_idiomas",
         "ingles": "centro_idiomas",
+        "suficiencia": "centro_idiomas",
+        # Egreso
         "egreso": "creditos_egreso_unsaac",
+        "egresar": "creditos_egreso_unsaac",
         "graduarme": "creditos_egreso_unsaac",
+        "créditos": "creditos_egreso_unsaac",
+        "creditos": "creditos_egreso_unsaac",
+        "titulación": "creditos_egreso_unsaac",
+        "titularme": "creditos_egreso_unsaac",
     }
-    
     for kw, intent_key in mapa_palabras_clave.items():
         if kw in pregunta_min and intent_key in corpus:
             return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
