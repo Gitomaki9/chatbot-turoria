@@ -9,7 +9,7 @@ PREGUNTAS:
 - qué tal
 - hey
 RESPUESTA:
-¡Hola! Soy un asistente virtual sobre el Reglamento de Tutoría Académica de la UNSAAC. Puedo ayudarte con información sobre tutores, tutorías, plazos, funciones, comités tutoriales y más. ¿Qué deseas saber?
+¡Hola! Soy el asistente virtual de la UNSAAC. Puedo ayudarte con consultas sobre tutores académicos, comedor universitario, becas, movilidad internacional, trámites de carnet universitario, Centro de Cómputo, Instituto de Idiomas y el Reglamento de Tutoría. ¿En qué te puedo orientar hoy?
 
 ###
 
@@ -23,7 +23,7 @@ PREGUNTAS:
 - eso es todo
 - hasta luego
 RESPUESTA:
-¡De nada! Si tienes otra duda sobre el Reglamento de Tutoría Académica de la UNSAAC, no dudes en preguntar. ¡Éxitos en tus estudios!
+¡De nada! Si tienes alguna otra consulta sobre los servicios o trámites de la UNSAAC, estaré aquí para ayudarte. ¡Éxitos en tus estudios antonianos!
 
 ###
 
@@ -59,3 +59,154 @@ RESPUESTA:
 Según el Artículo 13°, entre las funciones del Tutor Académico se encuentran: recibir información de los docentes sobre sus tutorados, solicitar información sobre estudiantes con inasistencias, comunicar al Comité Tutorial aspectos relevantes, orientar individualmente a los estudiantes en sus procesos de aprendizaje, y atender a estudiantes con discapacidad.
 
 ###
+
+INTENT: comedor_universitario
+PREGUNTAS:
+- como reservo comedor
+- reserva de comedor universitario
+- cómo sacar ticket de comedor
+- ticket comensal unsaac
+- dónde se saca el ticket del comedor
+- como ser comensal en la unsaac
+- como reservar cupo de comedor
+- como hago para reservar comedor
+- como reservar comedor
+- como se reserva el comedor
+- quiero reservar comedor
+- como entro al comedor
+RESPUESTA:
+🍲 **Reserva y Acceso al Comedor Universitario UNSAAC:**
+1. **Acceso al sistema:** Ingresa al portal oficial de Bienestar Universitario (bienestar.unsaac.edu.pe) o mediante el portal del Centro de Cómputo.
+2. **Inicio de sesión:** Ingresa tu **código de estudiante (6 dígitos)** y la **clave** que aparece en tu voucher de pago de matrícula del semestre vigente.
+3. **Reserva de cupo:** Ve a la sección **Procesos > Registro de Cupos (Comensales)** dentro del plazo publicado en el cronograma.
+4. **Pago y confirmación:** Realiza el pago de la tasa de comensal en las ventanillas de Caja Central de la UNSAAC para confirmar tu vacante.
+*Nota:* Los cupos son limitados. En algunos periodos, el servicio de cena se brinda sin necesidad de reserva previa para facilitar la atención.
+
+###
+
+INTENT: becas_unsaac
+PREGUNTAS:
+- qué becas hay en la unsaac
+- cómo postular a una beca en la unsaac
+- becas de bienestar universitario
+- beca permanencia unsaac
+- apoyo alimentario beca
+- subsidio de vivienda unsaac
+- como solicito beca
+- que becas ofrece la unsaac
+RESPUESTA:
+🎓 **Becas y Apoyo Socioeconómico UNSAAC:**
+La **Dirección de Bienestar Universitario (DBU)** gestiona los programas de apoyo a los estudiantes:
+- **Becas de Comedor y Alimentos:** Exención de pago o asignación para el comedor universitario.
+- **Beca Permanencia y Beca 18 (PRONABEC):** La UNSAAC emite constancias de rendimiento académico y ficha de seguimiento a través del Centro de Cómputo para postular a PRONABEC.
+- **Subvenciones socioeconómicas y Salud:** Apoyo médico, psicológico, asistencia social y servicio psicopedagógico.
+*Requisitos generales:* Estar matriculado en el semestre vigente, demostrar necesidad socioeconómica en la evaluación de la DBU y cumplir con los requisitos académicos del cronograma oficial publicado en la web de Bienestar Universitario.
+
+###
+
+INTENT: movilidad_academica
+PREGUNTAS:
+- cómo hacer intercambio academico en la unsaac
+- movilidad estudiantil internacional
+- becas de intercambio unsaac
+- requisitos para movilidad academica
+- convenio de intercambio unsaac
+- oficina de relaciones internacionales unsaac
+- como hago intercambio
+- puedo estudiar en el extranjero
+RESPUESTA:
+✈️ **Movilidad Estudiantil e Intercambio Académico UNSAAC:**
+Gestionado por la **Oficina de Cooperación y Relaciones Internacionales (OCRI)**.
+- **Requisitos Generales:**
+  1. Ser estudiante regular de pregrado con matrícula vigente.
+  2. Haber aprobado al menos el 50% de los créditos de la carrera (por lo general a partir del 6º semestre / 3er año).
+  3. Pertenecer al tercio superior o quinto superior de rendimiento académico.
+  4. Carta de motivación y recomendación docente.
+- **Programas disponibles:** Redes como PAME, CRISCOS y convenios bilaterales con universidades de América Latina, Europa y Norteamérica.
+- **Información y Convocatorias:** Consulta las convocatorias vigentes en el portal oficial de la OCRI en la web de la UNSAAC (unsaac.edu.pe).
+
+###
+
+INTENT: carnet_universitario
+PREGUNTAS:
+- cómo tramito mi carnet universitario
+- trámite de carné universitario unsaac
+- plataforma lycoris unsaac
+- sacar carnet de estudiante
+- dónde recojo mi carnet universitario
+- como saco mi carnet
+- como se saca carnet universitario
+RESPUESTA:
+🪪 **Trámite de Carnet Universitario UNSAAC:**
+1. **Plataforma oficial:** Ingresa a la plataforma **Lycoris** (lycoris.unsaac.edu.pe).
+2. **Requisitos:** Carga tu fotografía digital con fondo blanco según las especificaciones técnicas exigidas por SUNEDU/UNSAAC.
+3. **Pago:** Realiza el pago correspondiente por concepto de "Carné Universitario" en la plataforma de Recaudación UNSAAC o entidad financiera autorizada e ingresa los datos de tu comprobante en Lycoris.
+4. **Recojo:** La entrega es gestionada por la **Unidad de Servicios Académicos y Seguimiento al Graduado (DRSA / DSA)** ubicada en la Av. de la Cultura N° 733 (Pabellón A).
+
+###
+
+INTENT: tramites_academicos_pladdes
+PREGUNTAS:
+- cómo hacer un trámite en la unsaac
+- mesa de partes virtual unsaac
+- sistema pladdes unsaac
+- dónde se realizan los pagos de la unsaac
+- recaudacion unsaac pagos
+- como hago un tramite
+- como ingresar expediente
+RESPUESTA:
+📝 **Trámites Documentarios y Pagos en la UNSAAC:**
+- **Mesa de Partes Virtual / Trámites:** Ingresa al **Sistema de Trámite Documentario (PLADDES)** de la UNSAAC para enviar solicitudes administrativas, reclamos, certificados y expedientes.
+- **Pagos y Tasas:** Ingresa a la **Plataforma de Recaudación UNSAAC** (servicios.unsaac.edu.pe/recaudacion) para generar y abonar el pago de trámites antes de registrar tu expediente en PLADDES.
+- **Dirección de Registro y Servicios Académicos (DRSA):** Tercer piso del Pabellón "A", Av. de la Cultura Nro. 733. Atiende temas de matrícula, certificados y egreso.
+
+###
+
+INTENT: centro_computo
+PREGUNTAS:
+- qué trámites se hacen en el centro de cómputo
+- ficha de seguimiento académico unsaac
+- constancia para pronabec unsaac
+- resolución de bajo rendimiento unsaac
+- correo del centro de cómputo
+- contacto centro de computo
+RESPUESTA:
+💻 **Servicios del Centro de Cómputo UNSAAC:**
+- **Servicios:** Emisión de Ficha de Seguimiento Académico, resoluciones de bajo rendimiento académico y constancias de orden de mérito para postulación a becas PRONABEC.
+- **Acceso:** Portal web de la Unidad de Centro de Cómputo (sistemas.unsaac.edu.pe/centrocomputo).
+- **Contacto y Soporte:** Teléfono (084) 232398 Anexos 1506 - 1507 | Correo electrónico: **ccomputo@unsaac.edu.pe**.
+
+###
+
+INTENT: centro_idiomas
+PREGUNTAS:
+- dónde estudio idiomas en la unsaac
+- examen de suficiencia de idiomas unsaac
+- examen de ubicación idiomas
+- certificado de ingles unsaac
+- instituto de idiomas unsaac
+- como doy examen de suficiencia
+RESPUESTA:
+🌐 **Instituto de Idiomas UNSAAC:**
+- **Servicios:** Cursos de inglés, quechua, portugués, francés, italiano y exámenes de suficiencia o ubicación para el requisito de egreso/titulación.
+- **Trámites:** Las inscripciones, solicitudes de examen de suficiencia y certificados se tramitan a través del sistema **PLADDES** y el portal oficial **idiomas.unsaac.edu.pe**.
+- **Pagos:** Se realizan a través de la plataforma de Recaudación de la UNSAAC.
+
+###
+
+INTENT: creditos_egreso_unsaac
+PREGUNTAS:
+- cuantos creditos necesito para egresar
+- que necesito para egresar
+- requisitos para egresar de la unsaac
+- como me graduo en la unsaac
+- creditos requeridos egreso
+- como egresar de la unsaac
+RESPUESTA:
+🎓 **Requisitos para el Egreso en la UNSAAC:**
+1. **Créditos Aprobados:** Completar y aprobar la totalidad de créditos obligatorios y electivos exigidos por el Plan de Estudios vigente de tu Escuela Profesional (generalmente entre 200 y 220 créditos según la carrera).
+2. **Constancia de Prácticas Pre-Profesionales:** Acreditar el cumplimiento de las prácticas preprofesionales requeridas por tu facultad.
+3. **Acreditación de Idioma:** Certificado de suficiencia de un idioma extranjero o lengua nativa (emitido o validado por el Instituto de Idiomas de la UNSAAC).
+4. **Acreditación de Computación/Ofimática:** Según los requerimientos específicos de tu plan de estudios.
+5. **Ficha de No Deudor:** Constancia de no adeudar libros (Biblioteca Central), bienes ni pagos a la universidad.
+6. **Expediente de Egresado:** Presentación del expediente completo mediante el sistema de Trámite Documentario (PLADDES) dirigido a la Dirección de Registro y Servicios Académicos (DRSA).
