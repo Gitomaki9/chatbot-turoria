@@ -11,6 +11,19 @@ import tempfile
 from dotenv import load_dotenv
 load_dotenv()
 
+from cargar_cursos import (
+    cargar_cursos,
+    buscar_cursos_por_semestre,
+    buscar_curso_por_codigo,
+    buscar_cursos_por_docente,
+    buscar_cursos_por_aula,
+    formatear_lista_cursos,
+    responder_pregunta_cursos
+)
+
+# Cargar datos de cursos
+cursos_data = cargar_cursos()
+
 # Importar funciones para cargar tutores
 from cargar_tutores import (
     cargar_tutores,
