@@ -113,10 +113,33 @@ def contar_tutorados(tutores, docente=None):
             total += len(tutorados)
         return total
 
+# Lista de palabras comunes que NO deben interpretarse como nombres o apellidos
+STOPWORDS = {
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "del", "de", "al", "en", "yo", "tu", "tú",
+    "él", "ella", "ellos", "ellas", "nosotros", "usted", "ustedes", "que", "qué", "quien", "quién",
+    "quienes", "quiénes", "cual", "cuál", "cuales", "cuáles", "como", "cómo", "donde", "dónde",
+    "cuando", "cuándo", "cuanto", "cuánto", "cuantos", "cuántos", "cuanta", "cuánta", "cuantas", "cuántas",
+    "para", "por", "con", "sin", "sobre", "entre", "hasta", "desde", "hacia", "según", "segun", "acerca",
+    "respecto", "relación", "relacionado", "referente", "detalle", "detalles", "pero", "mas", "mientras",
+    "porque", "porqué", "es", "son", "fue", "fueron", "ser", "estar", "hacer", "tengo", "tiene", "tienen",
+    "necesito", "necesitan", "puedo", "puede", "pueden", "saber", "sabe", "sabes", "quiero", "quiere",
+    "deseo", "buscar", "solicitar", "pedir", "tramitar", "obtener", "reservar", "pagar", "egresar",
+    "matricular", "inscribir", "créditos", "creditos", "requisitos", "requisito", "comedor", "beca",
+    "becas", "movilidad", "intercambio", "carnet", "carné", "tramite", "trámite", "pladdes", "lycoris",
+    "idiomas", "computo", "cómputo", "escuela", "facultad", "carrera", "semestre", "horario", "pago",
+    "constancia", "certificado", "reglamento", "derechos", "deberes", "sanciones", "multas",
+    "tutor", "tutores", "tutoria", "tutoría", "tutorado", "tutorados", "docente", "docentes",
+    "profesor", "profesores", "estudiante", "estudiantes", "alumno", "alumnos", "nombre", "código",
+    "codigo", "lista", "tabla", "ver", "dame", "dime", "diga", "dígame", "info", "información",
+    "informacion", "ayuda", "consulta", "duda", "dudas", "tema", "temas"
+}
+
 def responder_pregunta_tutores(tutores, pregunta):
     """Función principal para procesar preguntas sobre tutores."""
+    if not tutores:
+        return None, None
+
     pregunta_lower = pregunta.lower().strip()
-    import re
     
     # 1. Buscar código de estudiante (6 dígitos)
     codigo_match = re.search(r'\b(\d{6})\b', pregunta)
@@ -128,35 +151,65 @@ def responder_pregunta_tutores(tutores, pregunta):
         else:
             return f"❌ No encontré un tutor para el código **{codigo}**. Verifica que el código sea correcto.", "Datos de tutores 📋"
     
-    # 2. Buscar por nombre de estudiante
-    palabras = pregunta_lower.split()
-    for palabra in palabras:
-        if len(palabra) > 3 and palabra not in ["estudiante", "alumno", "buscar", "nombre", "código", "codigo", "docente", "tutor"]:
-            resultados = buscar_tutor_por_nombre(tutores, palabra)
-            if resultados:
-                if len(resultados) == 1:
-                    tutor, nombre, codigo = resultados[0]
-                    return f"📋 El tutor del estudiante **{nombre}** (código {codigo}) es: **{tutor}**", "Datos de tutores 📋"
-                else:
-                    respuesta = "🔍 Encontré varios resultados:\n\n"
-                    for tutor, nombre, codigo in resultados:
-                        respuesta += f"- {nombre} (código {codigo}) → Tutor: {tutor}\n"
-                    return respuesta, "Datos de tutores 📋"
+    # Verificar si la consulta contiene intención o términos explícitos sobre tutores/alumnos
+    PALABRAS_INTENCION_TUTOR = {
+        "tutor", "tutores", "tutoria", "tutoría", "tutorado", "tutorados",
+        "docente", "docentes", "profesor", "profesores", "alumno", "alumnos",
+        "estudiante", "estudiantes", "código", "codigo"
+    }
     
-    # 3. Buscar por nombre de docente
-    for palabra in palabras:
-        if len(palabra) > 3 and palabra not in ["docente", "tutor", "buscar", "nombre"]:
-            tutorados = buscar_tutorados_por_docente(tutores, palabra)
-            if tutorados:
-                docente_completo = buscar_docente_por_nombre(tutores, palabra)
-                if not docente_completo:
-                    docente_completo = palabra.upper()
-                
-                respuesta = f"👨‍🏫 Los tutorados del docente **{docente_completo}** son:\n\n"
-                for t in tutorados:
-                    respuesta += f"- {t['nombre']} (código {t['codigo']})\n"
-                return respuesta, "Datos de tutores 📋"
+    palabras_raw = re.findall(r'\b\w+\b', pregunta_lower)
+    tiene_intencion_tutor = any(p in PALABRAS_INTENCION_TUTOR for p in palabras_raw)
     
+    # Filtrar palabras candidatas que puedan ser nombres o apellidos
+    candidatos = [p for p in palabras_raw if len(p) > 2 and p not in STOPWORDS]
+    
+    if not candidatos:
+        return None, None
+
+    # Si NO tiene intención explícita de tutoría y sólo hay 1 palabra candidata común,
+    # no interceptar para permitir que las preguntas generales pasen al Corpus / RAG.
+    if not tiene_intencion_tutor and len(candidatos) < 2:
+        return None, None
+
+    # 2. Probar si la consulta coincide con un docente (ej. "tutorados de acurio")
+    for palabra in candidatos:
+        tutorados = buscar_tutorados_por_docente(tutores, palabra)
+        if tutorados:
+            docente_completo = buscar_docente_por_nombre(tutores, palabra)
+            if not docente_completo:
+                docente_completo = palabra.upper()
+            
+            respuesta = f"👨‍🏫 Los tutorados del docente **{docente_completo}** son ({len(tutorados)} estudiantes):\n\n"
+            for t in tutorados[:15]:  # Limitar a los primeros 15 si son muchos
+                respuesta += f"- {t['nombre']} (código {t['codigo']})\n"
+            if len(tutorados) > 15:
+                respuesta += f"\n*... y {len(tutorados) - 15} estudiantes más.*"
+            return respuesta, "Datos de tutores 📋"
+
+    # 3. Probar si la consulta coincide con un estudiante
+    resultados_totales = []
+    for palabra in candidatos:
+        res = buscar_tutor_por_nombre(tutores, palabra)
+        if res:
+            for item in res:
+                if item not in resultados_totales:
+                    resultados_totales.append(item)
+    
+    if resultados_totales:
+        if len(resultados_totales) == 1:
+            tutor, nombre, codigo = resultados_totales[0]
+            return f"📋 El tutor del estudiante **{nombre}** (código {codigo}) es: **{tutor}**", "Datos de tutores 📋"
+        elif len(resultados_totales) <= 10:
+            respuesta = "🔍 Encontré los siguientes resultados:\n\n"
+            for tutor, nombre, codigo in resultados_totales:
+                respuesta += f"- **{nombre}** (código {codigo}) → Tutor: **{tutor}**\n"
+            return respuesta, "Datos de tutores 📋"
+        else:
+            # Si hay demasiados resultados (ej. palabra muy común), pedir ser más específico
+            respuesta = f"🔍 Encontré {len(resultados_totales)} coincidencias. Por favor, especifica el nombre completo o el código de 6 dígitos del estudiante."
+            return respuesta, "Datos de tutores 📋"
+
     return None, None
 
 # --- Prueba rápida ---
