@@ -8,12 +8,17 @@ import chromadb
 from chromadb.utils import embedding_functions
 import tempfile
 
-# Forzar recarga de tutores (temporal)
-import cargar_tutores
-cargar_tutores.cargar_tutores.clear()
-tutores_data = cargar_tutores.cargar_tutores()
+from dotenv import load_dotenv
+load_dotenv()
+
 # Importar funciones para cargar tutores
-from cargar_tutores import cargar_tutores, buscar_tutor_por_codigo, buscar_tutorados_por_docente, responder_pregunta_tutores, listar_todos_tutores
+from cargar_tutores import (
+    cargar_tutores,
+    buscar_tutor_por_codigo,
+    buscar_tutorados_por_docente,
+    responder_pregunta_tutores,
+    listar_todos_tutores
+)
 
 # Cargar datos de tutores
 tutores_data = cargar_tutores()
@@ -25,8 +30,8 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🎓 Chatbot de Tutoría Académica - UNSAAC")
-st.markdown("*Asistente virtual para consultas sobre el Reglamento de Tutoría Académica y tutores*")
+st.title("🎓 Chatbot de Tutoría y Servicios UNSAAC")
+st.markdown("*Asistente virtual para consultas sobre tutoría académica, servicios y vida universitaria UNSAAC*")
 
 # --- 1. Cargar corpus manual ---
 @st.cache_data
@@ -78,14 +83,15 @@ def init_groq():
         try:
             api_key = st.secrets["GROQ_API_KEY"]
         except:
-            st.error("❌ GROQ_API_KEY no encontrada. Revisa los secretos de Streamlit.")
+            st.error("❌ GROQ_API_KEY no encontrada. Configura la variable de entorno GROQ_API_KEY o los secretos de Streamlit.")
             st.stop()
     return Groq(api_key=api_key)
 
 # --- 3. Configurar búsqueda semántica con ChromaDB ---
 @st.cache_resource
 def init_vectorstore():
-    """Crea una base de datos vectorial con los PDFs"""
+    """Crea una base de datos vectorial con los PDFs usando RecursiveCharacterTextSplitter"""
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
     
     # Leer todos los PDFs
     docs = []
@@ -106,31 +112,42 @@ def init_vectorstore():
                         texto += page_text + "\n"
                 if texto.strip():
                     docs.append({"texto": texto, "nombre": file})
-                    st.info(f"📄 Procesando: {file}")
             except Exception as e:
-                st.warning(f"Error al leer {file}: {e}")
+                pass
     
     if not docs:
-        st.warning("⚠️ No se encontraron documentos PDF en data/")
         return None
     
-    # Dividir en fragmentos (chunks)
+    # Dividir en fragmentos (chunks) usando RecursiveCharacterTextSplitter
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=150,
+        separators=["\n\n", "\n", ".", " ", ""]
+    )
+    
     chunks = []
     for doc in docs:
-        texto = doc["texto"]
-        for i, parrafo in enumerate(texto.split("\n\n")):
-            if len(parrafo.strip()) > 50:
+        doc_chunks = splitter.split_text(doc["texto"])
+        for i, chunk_text in enumerate(doc_chunks):
+            if len(chunk_text.strip()) > 30:
                 chunks.append({
-                    "texto": parrafo.strip(),
+                    "texto": chunk_text.strip(),
                     "fuente": doc["nombre"],
-                    "chunk_id": i
+                    "chunk_id": f"pdf_{i}"
                 })
     
-    if not chunks:
-        st.warning("⚠️ No se pudieron crear fragmentos del PDF")
-        return None
+    # Indizar también la información del corpus.txt en la base vectorial para RAG semántico
+    corpus_dict = cargar_corpus()
+    for intent, data in corpus_dict.items():
+        contenido_corpus = f"Información oficial sobre {intent.replace('_', ' ')}:\n" + data["respuesta"]
+        chunks.append({
+            "texto": contenido_corpus,
+            "fuente": f"Servicios UNSAAC ({intent})",
+            "chunk_id": f"corpus_{intent}"
+        })
     
-    st.info(f"📊 {len(chunks)} fragmentos creados")
+    if not chunks:
+        return None
     
     # Crear embeddings
     try:
@@ -145,10 +162,8 @@ def init_vectorstore():
     try:
         client = chromadb.Client()
         
-        # Eliminar la colección si ya existe
         try:
             client.delete_collection("reglamento")
-            st.info("🔄 Colección anterior eliminada")
         except:
             pass  # No existía, continuar
         
@@ -168,7 +183,6 @@ def init_vectorstore():
                     ids=[f"chunk_{i+j}"]
                 )
         
-        st.success(f"✅ Base de datos vectorial lista ({len(chunks)} fragmentos)")
         return collection, chunks
     except Exception as e:
         st.error(f"❌ Error al crear base de datos vectorial: {e}")
@@ -201,12 +215,34 @@ def responder(pregunta, corpus, groq_client, vectorstore):
         return respuesta_tutores, fuente_tutores
     
     # --- 2. SEGUNDO: Buscar en corpus manual ---
+    # Coincidencia por frase exacta o palabra clave temática
     for intent, data in corpus.items():
         for p in data["preguntas"]:
             if p.lower() in pregunta_min or pregunta_min in p.lower():
                 return data["respuesta"], "Corpus manual ⚡"
     
-    # --- 3. TERCERO: Búsqueda semántica en PDFs (RAG) ---
+    # Atajos de palabras clave principales del corpus si la frase varía
+    mapa_palabras_clave = {
+        "comedor": "comedor_universitario",
+        "comensal": "comedor_universitario",
+        "beca": "becas_unsaac",
+        "becas": "becas_unsaac",
+        "intercambio": "movilidad_academica",
+        "movilidad": "movilidad_academica",
+        "lycoris": "carnet_universitario",
+        "pladdes": "tramites_academicos_pladdes",
+        "recaudación": "tramites_academicos_pladdes",
+        "recaudacion": "tramites_academicos_pladdes",
+        "idiomas": "centro_idiomas",
+        "inglés": "centro_idiomas",
+        "ingles": "centro_idiomas"
+    }
+    
+    for kw, intent_key in mapa_palabras_clave.items():
+        if kw in pregunta_min and intent_key in corpus:
+            return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
+
+    # --- 3. TERCERO: Búsqueda semántica en VectorStore (PDFs + Corpus) con Groq ---
     if vectorstore:
         try:
             collection, chunks = vectorstore
@@ -216,28 +252,28 @@ def responder(pregunta, corpus, groq_client, vectorstore):
                 contexto = "\n\n".join(fragmentos)
                 
                 prompt = f"""
-                Eres un asistente virtual de la UNSAAC. 
-                Responde la pregunta del usuario usando SOLO el contexto proporcionado.
-                Si el contexto no contiene información relevante, responde que no encontraste la información.
+                Eres un asistente virtual de la UNSAAC (Universidad Nacional de San Antonio Abad del Cusco). 
+                Responde a la pregunta del usuario utilizando la información del contexto proporcionado.
+                Sé amable, directo y estructurado. Si la información no está en el contexto, indica amablemente dónde o cómo el estudiante puede consultar (ej. Bienestar Universitario, DRSA, Mesa de Partes).
                 
-                Contexto (del Reglamento de Tutoría Académica):
+                Contexto oficial UNSAAC:
                 {contexto[:8000]}
                 
                 Pregunta del usuario: {pregunta}
                 
-                Respuesta (basada SOLO en el contexto):
+                Respuesta:
                 """
                 
                 response = groq_client.chat.completions.create(
                     model="llama-3.1-8b-instant",
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7,
-                    max_tokens=500
+                    temperature=0.6,
+                    max_tokens=600
                 )
                 
                 return response.choices[0].message.content, "Búsqueda semántica 🔍"
             else:
-                return "No encontré información relevante en el reglamento.", "Sin información"
+                return "No encontré información específica en nuestros registros. Te sugiero consultar en la página oficial de la UNSAAC o la Mesa de Partes Virtual.", "Sin información"
         except Exception as e:
             return f"Error en búsqueda semántica: {e}", "Error"
     
@@ -246,7 +282,10 @@ def responder(pregunta, corpus, groq_client, vectorstore):
 # --- Main ---
 corpus = cargar_corpus()
 groq_client = init_groq()
-vectorstore = init_vectorstore()
+
+with st.spinner("⏳ Inicializando base de datos vectorial y cargando reglamentos (solo la primera vez tomará 1-2 minutos para descargar el modelo)..."):
+    vectorstore = init_vectorstore()
+
 
 # Mostrar estado de los datos cargados en la barra lateral
 with st.sidebar:
