@@ -4,6 +4,12 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 import pickle
 
+try:
+    from .preprocessing import BasePreprocessing
+except ImportError:
+    from preprocessing import BasePreprocessing
+
+
 
 class RAG:
     def __init__(
