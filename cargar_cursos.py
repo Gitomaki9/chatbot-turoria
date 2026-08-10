@@ -31,18 +31,18 @@ def buscar_cursos_por_semestre(cursos, semestre):
     return resultados
 
 def buscar_curso_por_codigo(cursos, codigo):
-    """Busca un curso por su código"""
+    """Busca un curso por su código (búsqueda flexible)"""
     codigo = codigo.strip().upper()
     resultados = []
     for curso in cursos:
-        if curso['codigo'] == codigo:
+        if curso['codigo'] == codigo or codigo in curso['codigo']:
             resultados.append(curso)
     return resultados
 
 def buscar_curso_por_nombre(cursos, nombre):
     """
-    Busca un curso por su nombre (búsqueda parcial con prioridad)
-    Prioriza coincidencias exactas sobre coincidencias parciales
+    Busca un curso por su nombre con prioridad para coincidencias exactas
+    y números romanos (ej: "calculo ii" -> "CÁLCULO II")
     """
     nombre = nombre.lower().strip()
     resultados_exactos = []
@@ -53,16 +53,15 @@ def buscar_curso_por_nombre(cursos, nombre):
         
         # 1. Coincidencia exacta (prioridad máxima)
         if nombre_curso_lower == nombre:
-            resultados_exactos.insert(0, curso)  # Poner al inicio
+            resultados_exactos.insert(0, curso)
         
         # 2. Coincidencia con número romano (ej: "calculo ii" -> "CÁLCULO II")
         elif nombre in nombre_curso_lower:
-            # Dividir la búsqueda para priorizar el número romano
             partes = nombre.split()
             if len(partes) >= 2:
                 # Si la búsqueda tiene número romano (ej: "calculo ii")
-                # Dar prioridad a cursos que terminen con ese número
                 numero = partes[-1]  # "ii"
+                # Dar prioridad a cursos que terminen con ese número
                 if nombre_curso_lower.endswith(numero):
                     resultados_exactos.append(curso)
                 else:
@@ -146,44 +145,53 @@ def responder_pregunta_cursos(cursos, pregunta):
     
     # --- 1. DETECTAR PREGUNTAS SOBRE REQUISITOS ---
     if "requisito" in pregunta_lower or "requisitos" in pregunta_lower or "necesito" in pregunta_lower:
-        # Extraer posibles nombres de curso
         palabras = pregunta_lower.split()
         
-        # Buscar frases como "computacion grafica" (dos palabras juntas)
-        # Primero intentar con frases de 2 palabras
+        # Buscar frases de 2 o 3 palabras (ej: "calculo ii", "calculo iii")
         for i in range(len(palabras) - 1):
-            if len(palabras[i]) > 2 and len(palabras[i+1]) > 2:
+            if len(palabras[i]) > 2 and len(palabras[i+1]) > 1:
                 frase = f"{palabras[i]} {palabras[i+1]}"
+                # También probar con 3 palabras si existen
+                if i + 2 < len(palabras) and len(palabras[i+2]) > 1:
+                    frase_3 = f"{palabras[i]} {palabras[i+1]} {palabras[i+2]}"
+                    resultados = buscar_curso_por_nombre(cursos, frase_3)
+                    if resultados:
+                        curso = resultados[0]
+                        req = curso['requisito']
+                        if req and req != "-" and req != "—":
+                            req_cursos = buscar_curso_por_codigo(cursos, req)
+                            if req_cursos:
+                                req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
+                                return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
+                            else:
+                                return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req}**", "Datos de cursos 📚"
+                        else:
+                            return f"📚 **{curso['nombre_curso']}** no tiene requisitos previos.", "Datos de cursos 📚"
+                
                 resultados = buscar_curso_por_nombre(cursos, frase)
                 if resultados:
-                    # Buscar el curso que coincida mejor
-                    for curso in resultados:
-                        # Priorizar cursos que contengan exactamente la frase
-                        if frase in curso['nombre_curso'].lower():
-                            req = curso['requisito']
-                            if req and req != "-" and req != "—":
-                                req_cursos = buscar_curso_por_codigo(cursos, req)
-                                if req_cursos:
-                                    # ✅ MEJORA: Mostrar nombre completo del curso requisito
-                                    req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
-                                    return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
-                                else:
-                                    return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req}**", "Datos de cursos 📚"
-                            else:
-                                return f"📚 **{curso['nombre_curso']}** no tiene requisitos previos.", "Datos de cursos 📚"
+                    curso = resultados[0]
+                    req = curso['requisito']
+                    if req and req != "-" and req != "—":
+                        req_cursos = buscar_curso_por_codigo(cursos, req)
+                        if req_cursos:
+                            req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
+                            return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
+                        else:
+                            return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req}**", "Datos de cursos 📚"
+                    else:
+                        return f"📚 **{curso['nombre_curso']}** no tiene requisitos previos.", "Datos de cursos 📚"
         
         # Si no encontró con frases, buscar palabra por palabra
         for palabra in palabras:
             if len(palabra) > 3 and palabra not in ["requisito", "requisitos", "para", "curso", "de", "necesito", "tener", "llevar"]:
                 resultados = buscar_curso_por_nombre(cursos, palabra)
                 if resultados:
-                    # Buscar el curso que coincida mejor (priorizar el más largo)
-                    mejor_curso = max(resultados, key=lambda x: len(x['nombre_curso']))
+                    mejor_curso = resultados[0]
                     req = mejor_curso['requisito']
                     if req and req != "-" and req != "—":
                         req_cursos = buscar_curso_por_codigo(cursos, req)
                         if req_cursos:
-                            # ✅ MEJORA: Mostrar nombre completo del curso requisito
                             req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
                             return f"📚 **Requisitos para {mejor_curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
                         else:
@@ -191,10 +199,10 @@ def responder_pregunta_cursos(cursos, pregunta):
                     else:
                         return f"📚 **{mejor_curso['nombre_curso']}** no tiene requisitos previos.", "Datos de cursos 📚"
         
-        return "❌ No encontré información sobre ese curso. Por favor, especifica el nombre completo del curso (ej: Computación Gráfica II).", "Datos de cursos 📚"
+        return "❌ No encontré información sobre ese curso.", "Datos de cursos 📚"
     
     # --- 2. BUSCAR POR CÓDIGO DE CURSO ---
-    codigo_match = re.search(r'\b([A-Z]{2,4}\d{2,3}[A-Z]{1,3})\b', pregunta.upper())
+    codigo_match = re.search(r'\b([A-Z]{2,4}\d{2,4}[A-Z]{0,3})\b', pregunta.upper())
     if codigo_match:
         codigo = codigo_match.group(1)
         resultados = buscar_curso_por_codigo(cursos, codigo)
@@ -222,7 +230,7 @@ def responder_pregunta_cursos(cursos, pregunta):
         else:
             return f"❌ No encontré cursos para el semestre **{semestre}**.", "Datos de cursos 📚"
     
-    # --- 4. BUSCAR POR NOMBRE DE CURSO (BÚSQUEDA FLEXIBLE) ---
+    # --- 4. BUSCAR POR NOMBRE DE CURSO ---
     for palabra in pregunta_lower.split():
         if len(palabra) > 3 and palabra not in ["cursos", "curso", "buscar", "nombre", "código", "codigo", "semestre"]:
             resultados = buscar_curso_por_nombre(cursos, palabra)
@@ -251,3 +259,4 @@ def responder_pregunta_cursos(cursos, pregunta):
                     return formatear_lista_cursos(resultados), f"Datos de cursos 📚 (Aula: {palabra.upper()})"
     
     return None, None
+    
