@@ -223,95 +223,107 @@ def buscar_semanticamente(collection, pregunta, n_resultados=5):
 def responder(pregunta, corpus, groq_client, vectorstore):
     pregunta_min = pregunta.lower().strip()
     
-    # --- MAPA DE PALABRAS CLAVE (prioridad máxima para cronograma y servicios) ---
+    # ============================================================
+    # 🔥 PRIORIDAD MÁXIMA: MAPA DE PALABRAS CLAVE (antes que todo)
+    # ============================================================
     mapa_palabras_clave = {
-        # Cronograma
+        # --- Cronograma ---
         "empiezan las clases": "cronograma_2026_inicio_clases",
         "inicio de clases": "cronograma_2026_inicio_clases",
         "comienzo de clases": "cronograma_2026_inicio_clases",
+        "cuándo empiezan las clases": "cronograma_2026_inicio_clases",
         "terminan las clases": "cronograma_2026_fin_clases",
         "fin de clases": "cronograma_2026_fin_clases",
         "finaliza el semestre": "cronograma_2026_fin_clases",
+        "cuándo terminan las clases": "cronograma_2026_fin_clases",
         "fechas de matrícula": "cronograma_2026_matricula",
         "cuándo es la matrícula": "cronograma_2026_matricula",
+        "matrícula 2026": "cronograma_2026_matricula",
         "exámenes parciales": "cronograma_2026_examenes_parciales",
         "cuándo son los parciales": "cronograma_2026_examenes_parciales",
         "vacaciones": "cronograma_2026_vacaciones",
         "receso académico": "cronograma_2026_vacaciones",
         "actualización docente": "cronograma_2026_actualizacion_docente",
-        # Aniversario
+        # --- Aniversario ---
         "aniversario de la carrera": "aniversario_carrera",
         "fecha de creación": "aniversario_carrera",
         "13 de diciembre": "aniversario_carrera",
-        # Créditos
+        # --- Créditos ---
         "cuántos créditos puedo llevar": "creditos_maximos",
         "máximo de créditos": "creditos_maximos",
         "24 créditos": "creditos_maximos",
-        # Movilidad
+        # --- Movilidad ---
         "a qué universidad puedo irme": "universidades_movilidad",
         "convenios de movilidad": "universidades_movilidad",
-        # Comedor
+        # --- Comedor ---
         "reserva de comedor": "comedor_universitario",
         "cómo reservo comedor": "comedor_universitario",
         "cupo comedor": "comedor_universitario",
-        # Becas
+        "comensal": "comedor_universitario",
+        # --- Becas ---
         "becas": "becas_unsaac",
         "beca": "becas_unsaac",
-        # Movilidad
+        "apoyo económico": "becas_unsaac",
+        # --- Movilidad Académica ---
         "movilidad académica": "movilidad_academica",
         "intercambio": "movilidad_academica",
-        # Carnet
+        "estudiar en el extranjero": "movilidad_academica",
+        # --- Carnet ---
         "carnet universitario": "carnet_universitario",
         "carné": "carnet_universitario",
         "lycoris": "carnet_universitario",
-        # Trámites
+        # --- Trámites ---
         "trámite": "tramites_academicos_pladdes",
         "pladdes": "tramites_academicos_pladdes",
         "recaudación": "tramites_academicos_pladdes",
-        # Centro de Cómputo
+        "mesa de partes": "tramites_academicos_pladdes",
+        # --- Centro de Cómputo ---
         "centro de cómputo": "centro_computo",
         "computo": "centro_computo",
-        # Idiomas
+        "pronabec": "centro_computo",
+        # --- Idiomas ---
         "idiomas": "centro_idiomas",
         "inglés": "centro_idiomas",
         "ingles": "centro_idiomas",
-        # Egreso
+        "suficiencia": "centro_idiomas",
+        # --- Egreso ---
         "egreso": "creditos_egreso_unsaac",
         "egresar": "creditos_egreso_unsaac",
         "graduarme": "creditos_egreso_unsaac",
         "créditos necesarios": "creditos_egreso_unsaac",
         "requisitos para egresar": "creditos_egreso_unsaac",
-        # Tutoría
+        # --- Tutoría ---
         "tutoría": "definicion_tutoria",
+        "qué es la tutoría": "definicion_tutoria",
         "tutor": "funciones_tutor",
         "fines de la tutoría": "fines_tutoria",
-        # Número máximo de tutorados
+        # --- Número máximo de tutorados ---
         "cuántos estudiantes puede tener un tutor": "numero_maximo_tutorados",
         "máximo de tutorados": "numero_maximo_tutorados",
     }
     
+    # Buscar en el mapa de palabras clave
     for kw, intent_key in mapa_palabras_clave.items():
         if kw in pregunta_min and intent_key in corpus:
             return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
     
-    # --- 1. PRIMERO: Buscar en datos de tutores (CSV) ---
+    # --- 1. Buscar en datos de tutores (CSV) ---
     respuesta_tutores, fuente_tutores = responder_pregunta_tutores(tutores_data, pregunta)
     if respuesta_tutores:
         return respuesta_tutores, fuente_tutores
     
-    # --- 2. SEGUNDO: Buscar en datos de cursos (CSV) ---
+    # --- 2. Buscar en datos de cursos (CSV) ---
     respuesta_cursos, fuente_cursos = responder_pregunta_cursos(cursos_data, pregunta)
     if respuesta_cursos:
         return respuesta_cursos, fuente_cursos
     
-    # --- 3. TERCERO: Buscar en corpus manual ---
-    # Coincidencia por frase exacta o palabra clave temática
+    # --- 3. Buscar en corpus manual (coincidencia directa) ---
     for intent, data in corpus.items():
         for p in data["preguntas"]:
             if p.lower() in pregunta_min or pregunta_min in p.lower():
                 return data["respuesta"], "Corpus manual ⚡"
     
-    # --- 4. CUARTO: Búsqueda semántica en VectorStore (PDFs + Corpus) con Groq ---
+    # --- 4. Búsqueda semántica en VectorStore (RAG) ---
     if vectorstore:
         try:
             collection, chunks = vectorstore
@@ -347,7 +359,6 @@ def responder(pregunta, corpus, groq_client, vectorstore):
             return f"Error en búsqueda semántica: {e}", "Error"
     
     return "No encontré información sobre eso.", "Sin información"
-
 # --- Main ---
 corpus = cargar_corpus()
 groq_client = init_groq()
