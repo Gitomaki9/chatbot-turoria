@@ -148,6 +148,7 @@ def responder_pregunta_cursos(cursos, pregunta):
                             if req and req != "-" and req != "—":
                                 req_cursos = buscar_curso_por_codigo(cursos, req)
                                 if req_cursos:
+                                    # ✅ MEJORA: Mostrar nombre completo del curso requisito
                                     req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
                                     return f"📚 **Requisitos para {curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
                                 else:
@@ -166,6 +167,7 @@ def responder_pregunta_cursos(cursos, pregunta):
                     if req and req != "-" and req != "—":
                         req_cursos = buscar_curso_por_codigo(cursos, req)
                         if req_cursos:
+                            # ✅ MEJORA: Mostrar nombre completo del curso requisito
                             req_nombre = f"{req} - {req_cursos[0]['nombre_curso']}"
                             return f"📚 **Requisitos para {mejor_curso['nombre_curso']}**\n\n➡️ **{req_nombre}**", "Datos de cursos 📚"
                         else:
@@ -175,7 +177,6 @@ def responder_pregunta_cursos(cursos, pregunta):
         
         return "❌ No encontré información sobre ese curso. Por favor, especifica el nombre completo del curso (ej: Computación Gráfica II).", "Datos de cursos 📚"
     
-    # ... (resto del código igual)
     # --- 2. BUSCAR POR CÓDIGO DE CURSO ---
     codigo_match = re.search(r'\b([A-Z]{2,4}\d{2,3}[A-Z]{1,3})\b', pregunta.upper())
     if codigo_match:
