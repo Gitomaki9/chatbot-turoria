@@ -50,13 +50,29 @@ def buscar_curso_por_nombre(cursos, nombre):
     
     for curso in cursos:
         nombre_curso_lower = curso['nombre_curso'].lower()
-        # Priorizar coincidencias exactas o que contengan la palabra completa
-        if nombre in nombre_curso_lower:
-            # Si la palabra está al inicio o es una coincidencia cercana
-            if nombre_curso_lower.startswith(nombre) or f" {nombre}" in nombre_curso_lower:
-                resultados_exactos.append(curso)
+        
+        # 1. Coincidencia exacta (prioridad máxima)
+        if nombre_curso_lower == nombre:
+            resultados_exactos.insert(0, curso)  # Poner al inicio
+        
+        # 2. Coincidencia con número romano (ej: "calculo ii" -> "CÁLCULO II")
+        elif nombre in nombre_curso_lower:
+            # Dividir la búsqueda para priorizar el número romano
+            partes = nombre.split()
+            if len(partes) >= 2:
+                # Si la búsqueda tiene número romano (ej: "calculo ii")
+                # Dar prioridad a cursos que terminen con ese número
+                numero = partes[-1]  # "ii"
+                if nombre_curso_lower.endswith(numero):
+                    resultados_exactos.append(curso)
+                else:
+                    resultados_parciales.append(curso)
             else:
-                resultados_parciales.append(curso)
+                # Búsqueda simple de una palabra
+                if nombre_curso_lower.startswith(nombre) or f" {nombre}" in nombre_curso_lower:
+                    resultados_exactos.append(curso)
+                else:
+                    resultados_parciales.append(curso)
     
     # Devolver primero los resultados exactos, luego los parciales
     return resultados_exactos + resultados_parciales
