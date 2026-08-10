@@ -210,6 +210,9 @@ RESPUESTA:
 4. **Acreditación de Computación/Ofimática:** Según los requerimientos específicos de tu plan de estudios.
 5. **Ficha de No Deudor:** Constancia de no adeudar libros (Biblioteca Central), bienes ni pagos a la universidad.
 6. **Expediente de Egresado:** Presentación del expediente completo mediante el sistema de Trámite Documentario (PLADDES) dirigido a la Dirección de Registro y Servicios Académicos (DRSA).
+
+###
+
 INTENT: requisitos_curso
 PREGUNTAS:
 - requisitos para
@@ -233,6 +236,9 @@ RESPUESTA:
 Para obtener información detallada de un curso, necesito el código o nombre completo del curso. Por ejemplo:
 - "MEG01AIN"
 - "Computación Gráfica II"
+
+###
+
 INTENT: cronograma_2026_inicio_clases
 PREGUNTAS:
 - cuándo empiezan las clases
@@ -326,6 +332,8 @@ RESPUESTA:
 👨‍🏫 **Curso de Actualización Docente 2026:**
 - Semestre 2026-I: 23 al 27 de marzo
 - Semestre 2026-II: 24 al 28 de agosto
+
+###
 
 INTENT: creditos_maximos
 PREGUNTAS:
