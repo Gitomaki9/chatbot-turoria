@@ -1,4 +1,4 @@
-# app_groq.py - Chatbot con búsqueda semántica (ChromaDB + Sentence Transformers) + Datos de tutores
+# app_groq.py - Chatbot con búsqueda semántica (ChromaDB + Sentence Transformers) + Datos de tutores + Cursos + Cronograma
 import streamlit as st
 import os
 import re
@@ -11,6 +11,7 @@ import tempfile
 from dotenv import load_dotenv
 load_dotenv()
 
+# Importar funciones para cargar cursos
 from cargar_cursos import (
     cargar_cursos,
     buscar_cursos_por_semestre,
@@ -222,6 +223,77 @@ def buscar_semanticamente(collection, pregunta, n_resultados=5):
 def responder(pregunta, corpus, groq_client, vectorstore):
     pregunta_min = pregunta.lower().strip()
     
+    # --- MAPA DE PALABRAS CLAVE (prioridad máxima para cronograma y servicios) ---
+    mapa_palabras_clave = {
+        # Cronograma
+        "empiezan las clases": "cronograma_2026_inicio_clases",
+        "inicio de clases": "cronograma_2026_inicio_clases",
+        "comienzo de clases": "cronograma_2026_inicio_clases",
+        "terminan las clases": "cronograma_2026_fin_clases",
+        "fin de clases": "cronograma_2026_fin_clases",
+        "finaliza el semestre": "cronograma_2026_fin_clases",
+        "fechas de matrícula": "cronograma_2026_matricula",
+        "cuándo es la matrícula": "cronograma_2026_matricula",
+        "exámenes parciales": "cronograma_2026_examenes_parciales",
+        "cuándo son los parciales": "cronograma_2026_examenes_parciales",
+        "vacaciones": "cronograma_2026_vacaciones",
+        "receso académico": "cronograma_2026_vacaciones",
+        "actualización docente": "cronograma_2026_actualizacion_docente",
+        # Aniversario
+        "aniversario de la carrera": "aniversario_carrera",
+        "fecha de creación": "aniversario_carrera",
+        "13 de diciembre": "aniversario_carrera",
+        # Créditos
+        "cuántos créditos puedo llevar": "creditos_maximos",
+        "máximo de créditos": "creditos_maximos",
+        "24 créditos": "creditos_maximos",
+        # Movilidad
+        "a qué universidad puedo irme": "universidades_movilidad",
+        "convenios de movilidad": "universidades_movilidad",
+        # Comedor
+        "reserva de comedor": "comedor_universitario",
+        "cómo reservo comedor": "comedor_universitario",
+        "cupo comedor": "comedor_universitario",
+        # Becas
+        "becas": "becas_unsaac",
+        "beca": "becas_unsaac",
+        # Movilidad
+        "movilidad académica": "movilidad_academica",
+        "intercambio": "movilidad_academica",
+        # Carnet
+        "carnet universitario": "carnet_universitario",
+        "carné": "carnet_universitario",
+        "lycoris": "carnet_universitario",
+        # Trámites
+        "trámite": "tramites_academicos_pladdes",
+        "pladdes": "tramites_academicos_pladdes",
+        "recaudación": "tramites_academicos_pladdes",
+        # Centro de Cómputo
+        "centro de cómputo": "centro_computo",
+        "computo": "centro_computo",
+        # Idiomas
+        "idiomas": "centro_idiomas",
+        "inglés": "centro_idiomas",
+        "ingles": "centro_idiomas",
+        # Egreso
+        "egreso": "creditos_egreso_unsaac",
+        "egresar": "creditos_egreso_unsaac",
+        "graduarme": "creditos_egreso_unsaac",
+        "créditos necesarios": "creditos_egreso_unsaac",
+        "requisitos para egresar": "creditos_egreso_unsaac",
+        # Tutoría
+        "tutoría": "definicion_tutoria",
+        "tutor": "funciones_tutor",
+        "fines de la tutoría": "fines_tutoria",
+        # Número máximo de tutorados
+        "cuántos estudiantes puede tener un tutor": "numero_maximo_tutorados",
+        "máximo de tutorados": "numero_maximo_tutorados",
+    }
+    
+    for kw, intent_key in mapa_palabras_clave.items():
+        if kw in pregunta_min and intent_key in corpus:
+            return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
+    
     # --- 1. PRIMERO: Buscar en datos de tutores (CSV) ---
     respuesta_tutores, fuente_tutores = responder_pregunta_tutores(tutores_data, pregunta)
     if respuesta_tutores:
@@ -239,61 +311,7 @@ def responder(pregunta, corpus, groq_client, vectorstore):
             if p.lower() in pregunta_min or pregunta_min in p.lower():
                 return data["respuesta"], "Corpus manual ⚡"
     
-    # Atajos de palabras clave principales del corpus si la frase varía
-    mapa_palabras_clave = {
-        # Comedor Universitario
-        "comedor": "comedor_universitario",
-        "reservar": "comedor_universitario",
-        "reserva": "comedor_universitario",
-        "cupo": "comedor_universitario",
-        "ticket": "comedor_universitario",
-        "comensal": "comedor_universitario",
-        "comida": "comedor_universitario",
-        "almuerzo": "comedor_universitario",
-        "cena": "comedor_universitario",
-        # Becas
-        "beca": "becas_unsaac",
-        "becas": "becas_unsaac",
-        "apoyo": "becas_unsaac",
-        "subsidio": "becas_unsaac",
-        # Movilidad
-        "intercambio": "movilidad_academica",
-        "movilidad": "movilidad_academica",
-        "extranjero": "movilidad_academica",
-        # Carnet
-        "carnet": "carnet_universitario",
-        "carné": "carnet_universitario",
-        "lycoris": "carnet_universitario",
-        # Trámites
-        "pladdes": "tramites_academicos_pladdes",
-        "trámite": "tramites_academicos_pladdes",
-        "tramites": "tramites_academicos_pladdes",
-        "recaudación": "tramites_academicos_pladdes",
-        "recaudacion": "tramites_academicos_pladdes",
-        "expediente": "tramites_academicos_pladdes",
-        # Centro de Cómputo
-        "computo": "centro_computo",
-        "cómputo": "centro_computo",
-        "pronabec": "centro_computo",
-        # Idiomas
-        "idiomas": "centro_idiomas",
-        "inglés": "centro_idiomas",
-        "ingles": "centro_idiomas",
-        "suficiencia": "centro_idiomas",
-        # Egreso
-        "egreso": "creditos_egreso_unsaac",
-        "egresar": "creditos_egreso_unsaac",
-        "graduarme": "creditos_egreso_unsaac",
-        "créditos": "creditos_egreso_unsaac",
-        "creditos": "creditos_egreso_unsaac",
-        "titulación": "creditos_egreso_unsaac",
-        "titularme": "creditos_egreso_unsaac",
-    }
-    for kw, intent_key in mapa_palabras_clave.items():
-        if kw in pregunta_min and intent_key in corpus:
-            return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
-
-    # --- 3. TERCERO: Búsqueda semántica en VectorStore (PDFs + Corpus) con Groq ---
+    # --- 4. CUARTO: Búsqueda semántica en VectorStore (PDFs + Corpus) con Groq ---
     if vectorstore:
         try:
             collection, chunks = vectorstore
@@ -351,14 +369,16 @@ with st.sidebar:
     
     st.divider()
     st.caption("🔍 El chatbot busca en:")
-    st.caption("1️⃣ Datos de tutores (CSV)")
-    st.caption("2️⃣ Corpus manual")
-    st.caption("3️⃣ Reglamento (PDF)")
+    st.caption("1️⃣ Mapa de palabras clave (Cronograma/Servicios)")
+    st.caption("2️⃣ Datos de tutores (CSV)")
+    st.caption("3️⃣ Datos de cursos (CSV)")
+    st.caption("4️⃣ Corpus manual")
+    st.caption("5️⃣ Reglamento (PDF) - RAG")
 
 # Inicializar historial de chat
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "¡Hola! Soy el asistente virtual de tutoría académica de la UNSAAC. Puedo ayudarte con:\n\n• 📋 Consultas sobre tutores y tutorados\n• 📚 Preguntas sobre el Reglamento de Tutoría\n• 🎓 Información sobre la Escuela Profesional\n\n¿En qué puedo ayudarte?"}
+        {"role": "assistant", "content": "¡Hola! Soy el asistente virtual de tutoría académica de la UNSAAC. Puedo ayudarte con:\n\n• 📋 Consultas sobre tutores y tutorados\n• 📚 Preguntas sobre el Reglamento de Tutoría\n• 🎓 Información sobre la Escuela Profesional\n• 📅 Cronograma académico 2026\n\n¿En qué puedo ayudarte?"}
     ]
 
 # Mostrar mensajes del chat
@@ -382,3 +402,4 @@ if prompt := st.chat_input("Escribe tu pregunta aquí..."):
     with st.chat_message("assistant"):
         st.markdown(respuesta)
         st.caption(f"Fuente: {fuente}")
+        
