@@ -51,6 +51,9 @@ def normalizar_numero_romano(texto):
     return texto
 
 def buscar_curso_por_nombre(cursos, nombre):
+    """
+    Busca cursos por nombre priorizando números romanos específicos.
+    """
     nombre = nombre.lower().strip()
     resultados = []
     
@@ -65,10 +68,12 @@ def buscar_curso_por_nombre(cursos, nombre):
             numero_busqueda = ultima
             nombre_sin_numero = ' '.join(partes[:-1])
     
+    # 1. Coincidencia exacta
     for curso in cursos:
         if curso['nombre_curso'].lower() == nombre:
             resultados.append(curso)
     
+    # 2. Coincidencia con número romano específico
     if numero_busqueda:
         for curso in cursos:
             nombre_curso_lower = curso['nombre_curso'].lower()
@@ -78,13 +83,28 @@ def buscar_curso_por_nombre(cursos, nombre):
                     if curso not in resultados:
                         resultados.insert(0, curso)
     
+    # 3. Coincidencia que comienza con el nombre
     for curso in cursos:
         if curso['nombre_curso'].lower().startswith(nombre) and curso not in resultados:
             resultados.append(curso)
     
+    # 4. Coincidencia parcial
     for curso in cursos:
         if nombre in curso['nombre_curso'].lower() and curso not in resultados:
             resultados.append(curso)
+    
+    # 5. Priorizar el número romano exacto
+    if numero_busqueda and len(resultados) > 1:
+        def prioridad(curso):
+            nombre_curso = curso['nombre_curso'].lower()
+            if nombre_curso.endswith(f" {numero_busqueda}"):
+                return 0
+            for rom in romanos:
+                if nombre_curso.endswith(f" {rom}"):
+                    return 1
+            return 2
+        
+        resultados.sort(key=prioridad)
     
     return resultados
 
@@ -304,9 +324,8 @@ def responder_pregunta_cursos(cursos, pregunta):
         else:
             return f"❌ No encontré el curso con código **{codigo}**.", "Datos de cursos 📚"
     
-    # --- 3. SEMESTRE (MEJORADO) ---
+    # --- 3. SEMESTRE ---
     if "semestre" in pregunta_lower or "ciclo" in pregunta_lower:
-        # Buscar números (1-10)
         numeros = re.findall(r'\b([1-9]|10)\b', pregunta_lower)
         if numeros:
             semestre = numeros[0]
@@ -314,9 +333,8 @@ def responder_pregunta_cursos(cursos, pregunta):
             if resultados:
                 return formatear_lista_cursos(resultados), f"Datos de cursos 📚 (Semestre {semestre})"
             else:
-                return f"❌ No encontré cursos para el semestre **{semestre}**. Verifica la malla curricular.", "Datos de cursos 📚"
+                return f"❌ No encontré cursos para el semestre **{semestre}**.", "Datos de cursos 📚"
         
-        # Buscar números escritos
         palabras_semestre = {
             "primero": "1", "segundo": "2", "tercero": "3", "cuarto": "4",
             "quinto": "5", "sexto": "6", "séptimo": "7", "octavo": "8",
@@ -337,11 +355,10 @@ def responder_pregunta_cursos(cursos, pregunta):
             if resultados:
                 return formatear_lista_cursos(resultados), f"Datos de cursos 📚 ({palabra.upper()})"
     
-    # --- 5. PROFESOR (MEJORADO) ---
+    # --- 5. PROFESOR ---
     if "profesor" in pregunta_lower or "docente" in pregunta_lower:
         palabras = pregunta_lower.split()
         
-        # Buscar el nombre del curso (ej: "calculo 2")
         curso_buscado = None
         for i in range(len(palabras) - 1):
             if len(palabras[i]) > 2 and len(palabras[i+1]) > 1:
@@ -354,7 +371,6 @@ def responder_pregunta_cursos(cursos, pregunta):
         if curso_buscado:
             return formatear_horario_curso(curso_buscado), f"Datos de cursos 📚 (Profesor: {curso_buscado['docente']})"
         
-        # Buscar por nombre de profesor
         for palabra in palabras:
             if len(palabra) > 3 and palabra not in ["profesor", "docente", "cursos", "enseña", "buscar"]:
                 resultados = buscar_cursos_por_docente(cursos, palabra)
