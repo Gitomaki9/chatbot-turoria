@@ -233,3 +233,144 @@ RESPUESTA:
 Para obtener información detallada de un curso, necesito el código o nombre completo del curso. Por ejemplo:
 - "MEG01AIN"
 - "Computación Gráfica II"
+INTENT: cronograma_2026_inicio_clases
+PREGUNTAS:
+- cuándo empiezan las clases
+- inicio de clases 2026
+- cuando inicia el semestre
+- comienzo de clases
+- fecha de inicio de clases
+RESPUESTA:
+📅 El inicio de actividades lectivas para el **semestre 2026-I** es el **30 de marzo de 2026**.
+El **semestre 2026-II** inicia el **31 de agosto de 2026**.
+
+###
+
+INTENT: cronograma_2026_fin_clases
+PREGUNTAS:
+- cuándo terminan las clases
+- fin de clases 2026
+- termina el semestre
+- finalización de clases
+- cuando acaba el semestre
+RESPUESTA:
+📅 El **semestre 2026-I** finaliza el **20 de agosto de 2026**.
+El **semestre 2026-II** finaliza el **12 de enero de 2027**.
+
+###
+
+INTENT: cronograma_2026_matricula
+PREGUNTAS:
+- fechas de matrícula
+- cuándo es la matrícula
+- matrícula 2026
+- inscripción de cursos
+- cuando me matriculo
+RESPUESTA:
+📋 **Fechas de matrícula 2026:**
+
+**Semestre 2026-I:**
+- Matrícula regulares: 02 al 06 de marzo
+- Matrícula ingresantes: 09 al 13 de marzo
+- Matrícula excepcional: 16 al 20 de marzo
+
+**Semestre 2026-II:**
+- Matrícula regulares: 17 al 28 de agosto
+- Matrícula ingresantes: 17 al 28 de agosto
+- Matrícula excepcional: 17 al 28 de agosto
+
+⚠️ No se acepta matrícula extemporánea.
+
+###
+
+INTENT: cronograma_2026_examenes_parciales
+PREGUNTAS:
+- fechas de exámenes parciales
+- cuándo son los parciales
+- exámenes parciales 2026
+- fechas de exámenes
+RESPUESTA:
+📝 **Fechas de exámenes parciales 2026:**
+
+**Semestre 2026-I:**
+- 1er Parcial: 11 al 15 de mayo (4-5 créditos) / 1 al 5 de junio (1-3 créditos)
+- 2do Parcial: 22 al 26 de junio (4-5 créditos) / 10 al 14 de agosto (1-3 créditos)
+- 3er Parcial: 10 al 14 de agosto
+
+**Semestre 2026-II:**
+- 1er Parcial: 5 al 9 de octubre (4-5 créditos) / 26 al 30 de octubre (1-3 créditos)
+- 2do Parcial: 16 al 20 de noviembre (4-5 créditos) / 4 al 8 de enero (1-3 créditos)
+- 3er Parcial: 4 al 8 de enero
+
+###
+
+INTENT: cronograma_2026_vacaciones
+PREGUNTAS:
+- vacaciones 2026
+- receso académico
+- cuando hay vacaciones
+- fechas de vacaciones
+RESPUESTA:
+🌴 **Receso académico 2026:**
+- Entre semestres: 21 de agosto al 30 de agosto de 2026
+- Fin de año: 13 de enero de 2027 en adelante
+
+###
+
+INTENT: cronograma_2026_actualizacion_docente
+PREGUNTAS:
+- curso de actualización docente
+- actualización docente 2026
+- capacitación docente
+RESPUESTA:
+👨‍🏫 **Curso de Actualización Docente 2026:**
+- Semestre 2026-I: 23 al 27 de marzo
+- Semestre 2026-II: 24 al 28 de agosto
+
+INTENT: creditos_maximos
+PREGUNTAS:
+- cuantos creditos me puedo matricular
+- máximo de créditos
+- créditos máximos por semestre
+- cuantos creditos puedo llevar
+RESPUESTA:
+📚 El número máximo de créditos que puedes matricular por semestre es de **24 créditos**, según el Reglamento de Estudios de la UNSAAC. Para matricular más de 24 créditos, necesitas autorización especial del Decano de tu facultad.
+
+###
+
+INTENT: aniversario_carrera
+PREGUNTAS:
+- cuando es el aniversario de la carrera
+- aniversario de ingeniería informática
+- fecha de creación de la carrera
+- aniversario de informática
+RESPUESTA:
+🎂 La Escuela Profesional de Ingeniería Informática y de Sistemas de la UNSAAC fue creada el **13 de diciembre de 1971**, mediante Resolución N° CG-110-71. Cada año se celebra el aniversario de la carrera en esa fecha.
+
+###
+
+INTENT: universidades_movilidad
+PREGUNTAS:
+- a qué universidad puedo irme
+- universidades para movilidad
+- convenios de movilidad
+- donde puedo hacer intercambio
+- universidades convenio
+RESPUESTA:
+✈️ La UNSAAC tiene convenios de movilidad con universidades a través de redes como **PAME** (Perú), **CRISCOS** (América Latina) y acuerdos bilaterales con universidades de:
+- 🌎 **América Latina**: Argentina, Brasil, Chile, Colombia, México
+- 🌍 **Europa**: España, Francia, Italia, Alemania
+- 🌎 **Norteamérica**: Estados Unidos, Canadá
+- 🌏 **Asia**: Corea del Sur, Japón
+Consulta las convocatorias vigentes en la Oficina de Cooperación y Relaciones Internacionales (OCRI).
+
+###
+
+INTENT: numero_maximo_tutorados
+PREGUNTAS:
+- cuántos estudiantes puede tener un tutor
+- máximo de tutorados
+- cuantos alumnos por tutor
+- estudiantes por tutor
+RESPUESTA:
+📋 Según el Artículo 14° del Reglamento de Tutoría Académica, cada tutor puede tener un máximo de **25 estudiantes** a su cargo. En casos excepcionales, este número puede aumentar con la supervisión de un profesor ordinario.
