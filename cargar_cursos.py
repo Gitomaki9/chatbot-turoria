@@ -36,22 +36,65 @@ def buscar_curso_por_codigo(cursos, codigo):
             resultados.append(curso)
     return resultados
 
+def normalizar_numero_romano(texto):
+    """Convierte números arábigos a romanos (ej: 2 -> ii)"""
+    romanos = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x']
+    numeros = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+    
+    partes = texto.lower().split()
+    if len(partes) >= 2:
+        ultima = partes[-1]
+        if ultima in numeros:
+            idx = numeros.index(ultima)
+            if idx < len(romanos):
+                partes[-1] = romanos[idx]
+                return ' '.join(partes)
+    return texto
+
 def buscar_curso_por_nombre(cursos, nombre):
-    """Busca cursos por nombre con prioridad: exacto > comienza con > contiene"""
+    """
+    Busca cursos por nombre priorizando:
+    1. Coincidencia exacta
+    2. Coincidencia con número romano específico (ej: "calculo ii" -> "CÁLCULO II")
+    3. Coincidencia parcial
+    """
     nombre = nombre.lower().strip()
     resultados = []
+    
+    # Extraer número romano de la búsqueda
+    partes = nombre.split()
+    numero_busqueda = None
+    nombre_sin_numero = nombre
+    
+    romanos = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x']
+    if len(partes) >= 2:
+        ultima = partes[-1]
+        if ultima in romanos:
+            numero_busqueda = ultima
+            nombre_sin_numero = ' '.join(partes[:-1])
     
     # 1. Coincidencia exacta (prioridad máxima)
     for curso in cursos:
         if curso['nombre_curso'].lower() == nombre:
             resultados.append(curso)
     
-    # 2. Coincidencia que comienza con el nombre (sin duplicados)
+    # 2. Coincidencia con número romano específico (ej: "CÁLCULO II")
+    if numero_busqueda:
+        for curso in cursos:
+            nombre_curso_lower = curso['nombre_curso'].lower()
+            if nombre_curso_lower.endswith(f" {numero_busqueda}"):
+                nombre_curso_sin_numero = ' '.join(nombre_curso_lower.split()[:-1])
+                if nombre_sin_numero in nombre_curso_sin_numero or nombre_curso_sin_numero in nombre_sin_numero:
+                    if curso not in resultados:
+                        # Insertar al inicio para dar prioridad
+                        resultados.insert(0, curso)
+    
+    # 3. Coincidencia que comienza con el nombre (sin duplicados)
     for curso in cursos:
         if curso['nombre_curso'].lower().startswith(nombre) and curso not in resultados:
             resultados.append(curso)
     
-    # 3. Coincidencia parcial (sin duplicados)
+    # 4. Coincidencia parcial (sin duplicados)
     for curso in cursos:
         if nombre in curso['nombre_curso'].lower() and curso not in resultados:
             resultados.append(curso)
@@ -170,7 +213,6 @@ def responder_pregunta_cursos(cursos, pregunta):
             if len(palabra) > 3 and palabra not in ["cuantos", "cuántos", "cursos", "hay", "de", "el", "la"]:
                 resultados = buscar_curso_por_nombre(cursos, palabra)
                 if resultados:
-                    # Agrupar por nombre de curso
                     cursos_vistos = set()
                     cursos_unicos = []
                     for curso in resultados:
@@ -190,25 +232,52 @@ def responder_pregunta_cursos(cursos, pregunta):
     
     # --- 1. REQUISITOS (con árbol completo) ---
     if "requisito" in pregunta_lower or "requisitos" in pregunta_lower or "necesito" in pregunta_lower:
-        palabras = pregunta_lower.split()
+        # Normalizar la pregunta (ej: "calculo 2" -> "calculo ii")
+        pregunta_normalizada = normalizar_numero_romano(pregunta_lower)
+        palabras = pregunta_normalizada.split()
         curso_encontrado = None
         
-        # Buscar por frase completa (ej: "calculo ii")
-        for i in range(len(palabras) - 1):
-            if len(palabras[i]) > 2 and len(palabras[i+1]) > 1:
-                frase = f"{palabras[i]} {palabras[i+1]}"
-                if i + 2 < len(palabras) and len(palabras[i+2]) > 1:
-                    frase_3 = f"{palabras[i]} {palabras[i+1]} {palabras[i+2]}"
-                    resultados = buscar_curso_por_nombre(cursos, frase_3)
-                    if resultados:
-                        curso_encontrado = resultados[0]
+        # Extraer número romano de la pregunta
+        romanos = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x']
+        numero_pregunta = None
+        nombre_pregunta = pregunta_normalizada
+        
+        if len(palabras) >= 2:
+            ultima = palabras[-1]
+            if ultima in romanos:
+                numero_pregunta = ultima
+                nombre_pregunta = ' '.join(palabras[:-1])
+        
+        # Buscar el curso específico con el número romano
+        if numero_pregunta:
+            nombre_completo = f"{nombre_pregunta} {numero_pregunta}"
+            resultados = buscar_curso_por_nombre(cursos, nombre_completo)
+            if resultados:
+                # Priorizar el que tenga el número exacto
+                for c in resultados:
+                    if c['nombre_curso'].lower().endswith(f" {numero_pregunta}"):
+                        curso_encontrado = c
                         break
-                
                 if not curso_encontrado:
-                    resultados = buscar_curso_por_nombre(cursos, frase)
-                    if resultados:
-                        curso_encontrado = resultados[0]
-                        break
+                    curso_encontrado = resultados[0]
+        
+        # Si no encontró, buscar por frases
+        if not curso_encontrado:
+            for i in range(len(palabras) - 1):
+                if len(palabras[i]) > 2 and len(palabras[i+1]) > 1:
+                    frase = f"{palabras[i]} {palabras[i+1]}"
+                    if i + 2 < len(palabras) and len(palabras[i+2]) > 1:
+                        frase_3 = f"{palabras[i]} {palabras[i+1]} {palabras[i+2]}"
+                        resultados = buscar_curso_por_nombre(cursos, frase_3)
+                        if resultados:
+                            curso_encontrado = resultados[0]
+                            break
+                    
+                    if not curso_encontrado:
+                        resultados = buscar_curso_por_nombre(cursos, frase)
+                        if resultados:
+                            curso_encontrado = resultados[0]
+                            break
         
         # Si no encontró, buscar palabra por palabra
         if not curso_encontrado:
@@ -229,7 +298,6 @@ def responder_pregunta_cursos(cursos, pregunta):
             if not arbol:
                 return f"📚 **{nombre_curso}** no tiene requisitos previos.", "Datos de cursos 📚"
             
-            # Mostrar el árbol de requisitos
             respuesta = f"📚 **Árbol de requisitos para {nombre_curso}**\n\n"
             for i, (cod, nom, req_nom) in enumerate(arbol):
                 if i == 0:
