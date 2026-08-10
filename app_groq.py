@@ -224,18 +224,17 @@ def responder(pregunta, corpus, groq_client, vectorstore):
     pregunta_min = pregunta.lower().strip()
     
     # ============================================================
-    # 🔥 PRIORIDAD MÁXIMA: MAPA DE PALABRAS CLAVE (antes que todo)
+    # 🔥 MAPA DE PALABRAS CLAVE (prioridad máxima)
     # ============================================================
     mapa_palabras_clave = {
         # --- Cronograma ---
-        "empiezan las clases": "cronograma_2026_inicio_clases",
         "inicio de clases": "cronograma_2026_inicio_clases",
+        "empiezan las clases": "cronograma_2026_inicio_clases",
         "comienzo de clases": "cronograma_2026_inicio_clases",
         "cuándo empiezan las clases": "cronograma_2026_inicio_clases",
         "terminan las clases": "cronograma_2026_fin_clases",
         "fin de clases": "cronograma_2026_fin_clases",
         "finaliza el semestre": "cronograma_2026_fin_clases",
-        "cuándo terminan las clases": "cronograma_2026_fin_clases",
         "fechas de matrícula": "cronograma_2026_matricula",
         "cuándo es la matrícula": "cronograma_2026_matricula",
         "matrícula 2026": "cronograma_2026_matricula",
@@ -244,65 +243,86 @@ def responder(pregunta, corpus, groq_client, vectorstore):
         "vacaciones": "cronograma_2026_vacaciones",
         "receso académico": "cronograma_2026_vacaciones",
         "actualización docente": "cronograma_2026_actualizacion_docente",
+        
+        # --- Tutoría (solo preguntas generales, NO para tutores específicos) ---
+        "qué hace un tutor": "funciones_tutor",
+        "qué es un tutor": "funciones_tutor",
+        "funciones del tutor": "funciones_tutor",
+        "responsabilidades del tutor": "funciones_tutor",
+        "fines de la tutoría": "fines_tutoria",
+        "que es la tutoría": "definicion_tutoria",
+        
         # --- Aniversario ---
-        "aniversario de la carrera": "aniversario_carrera",
-        "fecha de creación": "aniversario_carrera",
+        "aniversario": "aniversario_carrera",
         "13 de diciembre": "aniversario_carrera",
+        
         # --- Créditos ---
-        "cuántos créditos puedo llevar": "creditos_maximos",
+        "créditos máximos": "creditos_maximos",
         "máximo de créditos": "creditos_maximos",
         "24 créditos": "creditos_maximos",
+        
         # --- Movilidad ---
         "a qué universidad puedo irme": "universidades_movilidad",
-        "convenios de movilidad": "universidades_movilidad",
+        "convenios": "universidades_movilidad",
+        
         # --- Comedor ---
-        "reserva de comedor": "comedor_universitario",
-        "cómo reservo comedor": "comedor_universitario",
-        "cupo comedor": "comedor_universitario",
+        "comedor": "comedor_universitario",
+        "reserva": "comedor_universitario",
+        "cupo": "comedor_universitario",
         "comensal": "comedor_universitario",
+        
         # --- Becas ---
-        "becas": "becas_unsaac",
         "beca": "becas_unsaac",
+        "becas": "becas_unsaac",
         "apoyo económico": "becas_unsaac",
+        
         # --- Movilidad Académica ---
         "movilidad académica": "movilidad_academica",
         "intercambio": "movilidad_academica",
         "estudiar en el extranjero": "movilidad_academica",
+        
         # --- Carnet ---
-        "carnet universitario": "carnet_universitario",
+        "carnet": "carnet_universitario",
         "carné": "carnet_universitario",
         "lycoris": "carnet_universitario",
+        
         # --- Trámites ---
-        "trámite": "tramites_academicos_pladdes",
         "pladdes": "tramites_academicos_pladdes",
+        "trámite": "tramites_academicos_pladdes",
         "recaudación": "tramites_academicos_pladdes",
         "mesa de partes": "tramites_academicos_pladdes",
+        
         # --- Centro de Cómputo ---
         "centro de cómputo": "centro_computo",
         "computo": "centro_computo",
         "pronabec": "centro_computo",
+        
         # --- Idiomas ---
         "idiomas": "centro_idiomas",
         "inglés": "centro_idiomas",
         "ingles": "centro_idiomas",
         "suficiencia": "centro_idiomas",
+        
         # --- Egreso ---
         "egreso": "creditos_egreso_unsaac",
         "egresar": "creditos_egreso_unsaac",
         "graduarme": "creditos_egreso_unsaac",
         "créditos necesarios": "creditos_egreso_unsaac",
         "requisitos para egresar": "creditos_egreso_unsaac",
-        # --- Tutoría ---
-        "tutoría": "definicion_tutoria",
-        "qué es la tutoría": "definicion_tutoria",
-        "tutor": "funciones_tutor",
-        "fines de la tutoría": "fines_tutoria",
+        
         # --- Número máximo de tutorados ---
         "cuántos estudiantes puede tener un tutor": "numero_maximo_tutorados",
         "máximo de tutorados": "numero_maximo_tutorados",
+        "cuantos alumnos por tutor": "numero_maximo_tutorados",
+        
+        # --- Requisitos de cursos (para que vaya a CSV) ---
+        "requisitos para": "buscar_curso_general",
+        "requisitos del curso": "buscar_curso_general",
+        "qué necesito para llevar": "buscar_curso_general",
+        "prerrequisitos de": "buscar_curso_general",
     }
     
-    # Buscar en el mapa de palabras clave
+    # 🔍 PRIMERO: Buscar en el mapa de palabras clave
     for kw, intent_key in mapa_palabras_clave.items():
         if kw in pregunta_min and intent_key in corpus:
             return corpus[intent_key]["respuesta"], "Corpus manual ⚡"
@@ -359,6 +379,7 @@ def responder(pregunta, corpus, groq_client, vectorstore):
             return f"Error en búsqueda semántica: {e}", "Error"
     
     return "No encontré información sobre eso.", "Sin información"
+
 # --- Main ---
 corpus = cargar_corpus()
 groq_client = init_groq()
@@ -413,4 +434,3 @@ if prompt := st.chat_input("Escribe tu pregunta aquí..."):
     with st.chat_message("assistant"):
         st.markdown(respuesta)
         st.caption(f"Fuente: {fuente}")
-        
